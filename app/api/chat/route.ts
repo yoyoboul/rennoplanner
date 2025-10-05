@@ -103,7 +103,7 @@ async function runToolCalls(
     function: { name: string; arguments: string };
     type: 'function';
   }>,
-  projectId: number
+  projectId: string | number
 ) {
   const executions = await Promise.all(
     toolCalls.map(async (tc) => {
@@ -159,7 +159,7 @@ function safeParseJson(s: string) {
 /**
  * Sauvegarde le message assistant dans l'historique projet.
  */
-function persistAssistantMessage(projectId: number, content: string) {
+function persistAssistantMessage(projectId: string | number, content: string) {
   try {
     db.prepare(
       `INSERT INTO chat_history (project_id, role, content) VALUES (?, ?, ?)`
@@ -192,7 +192,7 @@ async function completeWithToolsLoop({
     tool_call_id?: string;
     name?: string;
   }>;
-  projectId: number;
+  projectId: string | number;
   initialModel?: string;
   finalModel?: string;
   maxToolRounds?: number;

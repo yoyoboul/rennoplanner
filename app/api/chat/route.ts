@@ -14,7 +14,7 @@ import {
 import { openaiRateLimiter, checkRateLimit } from '@/lib/rate-limiter';
 import { buildProjectContext, buildRoomsContext } from '@/lib/ai-context';
 import { SYSTEM_PROMPT, CONTEXT_PROMPT, ROOMS_PROMPT } from '@/lib/ai-prompts';
-import { db } from '@/lib/db';
+import { getChatHistory, saveChatMessage } from '@/lib/db-mongo';
 
 export const runtime = 'nodejs'; // ou 'edge' si vos libs sont compatibles
 
@@ -159,13 +159,11 @@ function safeParseJson(s: string) {
 /**
  * Sauvegarde le message assistant dans l'historique projet.
  */
-function persistAssistantMessage(projectId: string | number, content: string) {
+async function persistAssistantMessage(projectId: string | number, content: string) {
   try {
-    db.prepare(
-      `INSERT INTO chat_history (project_id, role, content) VALUES (?, ?, ?)`
-    ).run(projectId, 'assistant', content);
-  } catch {
-    logWarn('Failed to save chat history', { projectId });
+    await saveChatMessage(projectId.toString(), 'assistant', content);
+  } catch (error) {
+    logWarn('Failed to save chat history', { projectId, error: (error as Error).message });
   }
 }
 
@@ -355,7 +353,7 @@ async function completeWithToolsLoop({
 
   // Persistance
   if (projectId && content) {
-    persistAssistantMessage(projectId, content);
+    await persistAssistantMessage(projectId, content);
   }
 
   // Rapport d'usage (facultatif)
@@ -428,12 +426,8 @@ export async function GET(request: Request) {
       throw new Error('project_id requis');
     }
 
-    const history = db
-      .prepare(
-        `SELECT * FROM chat_history WHERE project_id = ? ORDER BY created_at ASC`
-      )
-      .all(project_id);
+    const history = await getChatHistory(project_id);
 
-    return NextResponse.json(history);
+    return history;
   });
 }

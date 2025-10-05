@@ -357,3 +357,72 @@ export async function deletePurchase(id: string): Promise<boolean> {
   return result.deletedCount === 1;
 }
 
+// ==================== CHAT HISTORY ====================
+
+export interface ChatMessage {
+  id: string;
+  project_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: string;
+}
+
+interface ChatMessageMongo {
+  _id?: ObjectId;
+  project_id: ObjectId;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  created_at: Date;
+}
+
+export async function getChatHistory(projectId: string): Promise<ChatMessage[]> {
+  const db = await getDatabase();
+  const messages = await db.collection<ChatMessageMongo>('chat_history')
+    .find({ project_id: new ObjectId(projectId) })
+    .sort({ created_at: 1 })
+    .toArray();
+  
+  return messages.map(msg => ({
+    id: msg._id!.toString(),
+    project_id: projectId,
+    role: msg.role,
+    content: msg.content,
+    created_at: msg.created_at.toISOString(),
+  }));
+}
+
+export async function saveChatMessage(
+  projectId: string,
+  role: 'user' | 'assistant' | 'system',
+  content: string
+): Promise<ChatMessage> {
+  const db = await getDatabase();
+  const now = new Date();
+  
+  const messageDoc: ChatMessageMongo = {
+    project_id: new ObjectId(projectId),
+    role,
+    content,
+    created_at: now,
+  };
+  
+  const result = await db.collection<ChatMessageMongo>('chat_history').insertOne(messageDoc);
+  
+  return {
+    id: result.insertedId.toString(),
+    project_id: projectId,
+    role,
+    content,
+    created_at: now.toISOString(),
+  };
+}
+
+export async function deleteChatHistory(projectId: string): Promise<boolean> {
+  const db = await getDatabase();
+  const result = await db.collection<ChatMessageMongo>('chat_history').deleteMany({ 
+    project_id: new ObjectId(projectId) 
+  });
+  
+  return result.deletedCount > 0;
+}
+

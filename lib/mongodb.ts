@@ -1,37 +1,41 @@
 import { MongoClient, Db, ObjectId } from 'mongodb';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('⚠️ Veuillez définir la variable MONGODB_URI dans .env.local');
-}
-
-const uri = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI || '';
 const options = {};
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let client: MongoClient | null = null;
+let clientPromise: Promise<MongoClient> | null = null;
 
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-if (process.env.NODE_ENV === 'development') {
-  // En développement, utiliser une variable globale pour conserver la connexion
-  // durant les rechargements de modules (hot reload)
-  if (!global._mongoClientPromise) {
+// Initialiser MongoDB seulement si MONGODB_URI est défini
+if (uri) {
+  if (process.env.NODE_ENV === 'development') {
+    // En développement, utiliser une variable globale pour conserver la connexion
+    // durant les rechargements de modules (hot reload)
+    if (!global._mongoClientPromise) {
+      client = new MongoClient(uri, options);
+      global._mongoClientPromise = client.connect();
+    }
+    clientPromise = global._mongoClientPromise;
+  } else {
+    // En production, créer une nouvelle connexion
     client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+    clientPromise = client.connect();
   }
-  clientPromise = global._mongoClientPromise;
 } else {
-  // En production, créer une nouvelle connexion
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  console.warn('⚠️ MONGODB_URI non défini - MongoDB non disponible');
 }
 
 export { clientPromise };
 
 // Helper pour obtenir la base de données
 export async function getDatabase(): Promise<Db> {
+  if (!clientPromise) {
+    throw new Error('⚠️ MongoDB non configuré. Veuillez définir MONGODB_URI dans .env.local');
+  }
   const client = await clientPromise;
   return client.db('renoplanner');
 }

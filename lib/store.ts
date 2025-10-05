@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { toast } from 'sonner';
 import type { Project, Room, Task, ProjectWithDetails, Purchase, PurchaseWithDetails } from './types';
-import { handleAPICall, showErrorToast, showSuccessToast } from './client-error-handler';
+import { handleAPICall } from './client-error-handler';
 
 interface AppState {
   currentProject: ProjectWithDetails | null;
@@ -19,23 +18,23 @@ interface AppState {
 
   // API calls
   fetchProjects: () => Promise<void>;
-  fetchProject: (id: number) => Promise<void>;
+  fetchProject: (id: string | number) => Promise<void>;
   createProject: (data: Partial<Project>) => Promise<void>;
-  updateProject: (id: number, data: Partial<Project>) => Promise<void>;
-  deleteProject: (id: number) => Promise<void>;
+  updateProject: (id: string | number, data: Partial<Project>) => Promise<void>;
+  deleteProject: (id: string | number) => Promise<void>;
 
   createRoom: (data: Partial<Room>) => Promise<void>;
-  updateRoom: (id: number, data: Partial<Room>) => Promise<void>;
-  deleteRoom: (id: number) => Promise<void>;
+  updateRoom: (id: string | number, data: Partial<Room>) => Promise<void>;
+  deleteRoom: (id: string | number) => Promise<void>;
 
   createTask: (data: Partial<Task>) => Promise<void>;
-  updateTask: (id: number, data: Partial<Task>) => Promise<void>;
-  deleteTask: (id: number) => Promise<void>;
+  updateTask: (id: string | number, data: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string | number) => Promise<void>;
 
-  fetchPurchases: (projectId: number) => Promise<void>;
+  fetchPurchases: (projectId: string | number) => Promise<void>;
   createPurchase: (data: Partial<Purchase>) => Promise<void>;
-  updatePurchase: (id: number, data: Partial<Purchase>) => Promise<void>;
-  deletePurchase: (id: number) => Promise<void>;
+  updatePurchase: (id: string | number, data: Partial<Purchase>) => Promise<void>;
+  deletePurchase: (id: string | number) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -59,8 +58,9 @@ export const useStore = create<AppState>((set, get) => ({
         { errorMessage: 'Impossible de charger les projets' }
       );
       set({ projects, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -71,8 +71,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to fetch project');
       const project = await response.json();
       set({ currentProject: project, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -92,8 +93,9 @@ export const useStore = create<AppState>((set, get) => ({
       );
       set({ projects: [...get().projects, project], isLoading: false });
       await get().fetchProject(project.id);
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -108,8 +110,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to update project');
       await get().fetchProject(id);
       await get().fetchProjects();
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -123,8 +126,9 @@ export const useStore = create<AppState>((set, get) => ({
         currentProject: get().currentProject?.id === id ? null : get().currentProject,
         isLoading: false,
       });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -145,8 +149,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (data.project_id) {
         await get().fetchProject(data.project_id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -162,8 +167,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (get().currentProject) {
         await get().fetchProject(get().currentProject!.id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -175,8 +181,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (get().currentProject) {
         await get().fetchProject(get().currentProject!.id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -197,8 +204,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (get().currentProject) {
         await get().fetchProject(get().currentProject!.id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -219,8 +227,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (get().currentProject) {
         await get().fetchProject(get().currentProject!.id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -232,8 +241,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (get().currentProject) {
         await get().fetchProject(get().currentProject!.id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -244,8 +254,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (!response.ok) throw new Error('Failed to fetch purchases');
       const purchases = await response.json();
       set({ purchases, isLoading: false });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -267,8 +278,9 @@ export const useStore = create<AppState>((set, get) => ({
       if (data.project_id) {
         await get().fetchPurchases(data.project_id);
       }
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -290,8 +302,9 @@ export const useStore = create<AppState>((set, get) => ({
         purchases: get().purchases.map((p) => (p.id === id ? updatedPurchase : p)),
         isLoading: false,
       });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 
@@ -309,8 +322,9 @@ export const useStore = create<AppState>((set, get) => ({
         purchases: get().purchases.filter((p) => p.id !== id),
         isLoading: false,
       });
-    } catch (error: any) {
-      set({ error: error.message, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
     }
   },
 }));

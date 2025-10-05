@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { X, Save, Edit, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { X, Save, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import type { ProjectWithDetails } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
 import { useStore } from '@/lib/store';
@@ -22,7 +22,7 @@ export function BudgetManager({ project, onClose }: BudgetManagerProps) {
   useEffect(() => {
     fetchPurchases(project.id);
   }, [project.id, fetchPurchases]);
-  const [roomBudgets, setRoomBudgets] = useState<Record<number, string>>(
+  const [roomBudgets, setRoomBudgets] = useState<Record<string | number, string>>(
     project.rooms.reduce((acc, room) => {
       // Utiliser allocated_budget si disponible, sinon utiliser les coûts estimés
       const budget = room.allocated_budget
@@ -30,7 +30,7 @@ export function BudgetManager({ project, onClose }: BudgetManagerProps) {
         : room.tasks.reduce((sum, task) => sum + (task.estimated_cost || 0), 0).toString();
       acc[room.id] = budget;
       return acc;
-    }, {} as Record<number, string>)
+    }, {} as Record<string | number, string>)
   );
 
   const totalAllocated = useMemo(() => {
@@ -53,7 +53,7 @@ export function BudgetManager({ project, onClose }: BudgetManagerProps) {
 
     // Mettre à jour le budget alloué pour chaque pièce
     for (const [roomId, budget] of Object.entries(roomBudgets)) {
-      await updateRoom(parseInt(roomId), {
+      await updateRoom(roomId, {
         allocated_budget: parseFloat(budget),
       });
     }
@@ -77,14 +77,14 @@ export function BudgetManager({ project, onClose }: BudgetManagerProps) {
     if (totalEstimated === 0) {
       // Si pas d'estimation, répartir équitablement
       const perRoom = budget / project.rooms.length;
-      const newBudgets: Record<number, string> = {};
+      const newBudgets: Record<string | number, string> = {};
       project.rooms.forEach(room => {
         newBudgets[room.id] = perRoom.toFixed(2);
       });
       setRoomBudgets(newBudgets);
     } else {
       // Répartir proportionnellement aux estimations
-      const newBudgets: Record<number, string> = {};
+      const newBudgets: Record<string | number, string> = {};
       roomCosts.forEach(({ id, estimatedCost }) => {
         const proportion = estimatedCost / totalEstimated;
         newBudgets[id] = (budget * proportion).toFixed(2);
@@ -264,7 +264,7 @@ export function BudgetManager({ project, onClose }: BudgetManagerProps) {
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="p-4">
                 <p className="text-sm text-blue-800">
-                  💡 <strong>Astuce :</strong> Plus de 50% du budget n'est pas alloué. Utilisez "Répartir Auto" pour une répartition optimale.
+                  💡 <strong>Astuce :</strong> Plus de 50% du budget n&apos;est pas alloué. Utilisez &quot;Répartir Auto&quot; pour une répartition optimale.
                 </p>
               </CardContent>
             </Card>

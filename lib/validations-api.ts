@@ -52,9 +52,8 @@ export const updateProjectSchema = z.object({
 // ============================================
 
 export const createRoomSchema = z.object({
-  project_id: z.number()
-    .int()
-    .positive('L\'ID du projet doit être positif'),
+  project_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val)),
   name: z.string()
     .min(1, 'Le nom de la pièce est requis')
     .max(100, 'Le nom ne peut pas dépasser 100 caractères'),
@@ -108,9 +107,8 @@ const taskStatusSchema = z.enum(['todo', 'in_progress', 'completed', 'blocked'])
 const taskPrioritySchema = z.enum(['low', 'medium', 'high', 'urgent']);
 
 export const createTaskSchema = z.object({
-  room_id: z.number()
-    .int()
-    .positive('L\'ID de la pièce doit être positif'),
+  room_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val)),
   title: z.string()
     .min(1, 'Le titre est requis')
     .max(200, 'Le titre ne peut pas dépasser 200 caractères'),
@@ -205,16 +203,13 @@ const purchaseStatusSchema = z.enum(['planned', 'in_cart', 'purchased']);
 const purchaseItemTypeSchema = z.enum(['materiaux', 'meubles']);
 
 export const createPurchaseSchema = z.object({
-  project_id: z.number()
-    .int()
-    .positive('L\'ID du projet doit être positif'),
-  room_id: z.number()
-    .int()
-    .positive('L\'ID de la pièce doit être positif')
+  project_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val)),
+  room_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val))
     .optional(),
-  task_id: z.number()
-    .int()
-    .positive('L\'ID de la tâche doit être positif')
+  task_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val))
     .optional(),
   item_name: z.string()
     .min(1, 'Le nom de l\'article est requis')
@@ -291,9 +286,8 @@ export const chatMessageSchema = z.object({
     role: z.enum(['user', 'assistant', 'system']),
     content: z.string().min(1, 'Le message ne peut pas être vide'),
   })).min(1, 'Au moins un message est requis'),
-  project_id: z.number()
-    .int()
-    .positive('L\'ID du projet doit être positif'),
+  project_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => typeof val === 'number' ? val : val),
 });
 
 // ============================================

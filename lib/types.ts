@@ -14,7 +14,7 @@ export type PurchaseStatus = 'planned' | 'in_cart' | 'purchased';
 export type PurchaseItemType = 'materiaux' | 'meubles';
 
 export interface Project {
-  id: number;
+  id: string | number;
   name: string;
   description?: string;
   start_date?: string;
@@ -25,8 +25,8 @@ export interface Project {
 }
 
 export interface Room {
-  id: number;
-  project_id: number;
+  id: string | number;
+  project_id: string | number;
   name: string;
   description?: string;
   surface_area?: number;
@@ -35,8 +35,8 @@ export interface Room {
 }
 
 export interface Task {
-  id: number;
-  room_id: number;
+  id: string | number;
+  room_id: string | number;
   title: string;
   description?: string;
   category: TaskCategory;
@@ -54,9 +54,9 @@ export interface Task {
 }
 
 export interface Document {
-  id: number;
-  task_id?: number;
-  project_id?: number;
+  id: string | number;
+  task_id?: string | number;
+  project_id?: string | number;
   file_name: string;
   file_path: string;
   file_type?: string;
@@ -65,8 +65,8 @@ export interface Document {
 }
 
 export interface ChatMessage {
-  id: number;
-  project_id: number;
+  id: string | number;
+  project_id: string | number;
   role: 'user' | 'assistant' | 'system';
   content: string;
   function_call?: string;
@@ -74,10 +74,10 @@ export interface ChatMessage {
 }
 
 export interface Purchase {
-  id: number;
-  project_id: number;
-  room_id?: number;
-  task_id?: number;
+  id: string | number;
+  project_id: string | number;
+  room_id?: string | number;
+  task_id?: string | number;
   item_name: string;
   description?: string;
   quantity: number;

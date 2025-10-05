@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Send, Bot, User, Loader2, Sparkles, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { INITIAL_ASSISTANT_MESSAGE } from '@/lib/ai-prompts';
 import { useStore } from '@/lib/store';
@@ -110,9 +110,10 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
 
         // Succès
         finalOk = payload as ServerResponseOk;
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as { name?: string; message?: string };
         // Abort -> on sort proprement
-        if (err?.name === 'AbortError') {
+        if (error?.name === 'AbortError') {
           finalErr = { error: 'Requête annulée.' };
           break;
         }
@@ -133,8 +134,11 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
       setMessages((prev) => [...prev, assistantMessage]);
       setLastToolInfo({ calls: finalOk.tool_calls, results: finalOk.tool_results });
 
-      // Rafraîchis les données liées au projet (sans bloquer l’UX)
-      Promise.allSettled([fetchProject(projectId as any), fetchPurchases(projectId as any)]).catch(() => {});
+      // Rafraîchis les données liées au projet (sans bloquer l'UX)
+      Promise.allSettled([
+        fetchProject(projectId as number),
+        fetchPurchases(projectId as number),
+      ]).catch(() => {});
     } else if (finalErr) {
       console.error('AIChat error:', finalErr);
       const details =
@@ -301,7 +305,7 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
           {isLoading && (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={() => abortRef.current?.abort()}
               className="text-sm h-12 hidden sm:flex"
             >

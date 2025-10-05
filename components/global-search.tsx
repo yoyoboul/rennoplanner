@@ -3,11 +3,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
-import { Search, Hash, Home, ShoppingCart, MessageSquare, X, Calendar } from 'lucide-react';
+import { Search, Hash, Home, ShoppingCart, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { formatCurrency, getCategoryIcon } from '@/lib/utils';
-import type { ProjectWithDetails, Task, PurchaseWithDetails } from '@/lib/types';
+import type { ProjectWithDetails, PurchaseWithDetails } from '@/lib/types';
 
 interface GlobalSearchProps {
   isOpen: boolean;

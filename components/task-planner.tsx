@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Calendar, Clock, Plus, X, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, X, AlertCircle } from 'lucide-react';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Task } from '@/lib/types';
 
 interface TaskPlannerProps {
   task: Task;
-  onSave: (taskId: number, data: { start_date?: string; end_date?: string; estimated_duration?: number }) => Promise<void>;
+  onSave: (taskId: string | number, data: { start_date?: string; end_date?: string; estimated_duration?: number }) => Promise<void>;
   onClose: () => void;
 }
 

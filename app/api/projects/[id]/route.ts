@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { getProjectById, updateProject, deleteProject } from '@/lib/db-mongo';
 import { updateProjectSchema } from '@/lib/validations-api';
 import { withErrorHandling, assertExists, logInfo } from '@/lib/errors';

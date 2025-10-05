@@ -44,23 +44,26 @@ export async function POST(request: Request) {
     } = validatedData;
 
     // Vérifier que le projet existe
-    const project = await getProjectById(project_id);
-    assertExists(project, 'Projet', project_id);
+    const project = await getProjectById(project_id.toString());
+    assertExists(project, 'Projet', project_id.toString());
 
     // Vérifier que la pièce existe si spécifiée
     if (room_id) {
-      const room = await getRoomById(room_id);
-      assertExists(room, 'Pièce', room_id);
+      const room = await getRoomById(room_id.toString());
+      assertExists(room, 'Pièce', room_id.toString());
     }
 
     // Vérifier que la tâche existe si spécifiée
     if (task_id) {
-      const task = await getTaskById(task_id);
-      assertExists(task, 'Tâche', task_id);
+      const task = await getTaskById(task_id.toString());
+      assertExists(task, 'Tâche', task_id.toString());
     }
 
     const purchase = await createPurchase({
       ...validatedData,
+      project_id: project_id.toString(),
+      room_id: room_id?.toString(),
+      task_id: task_id?.toString(),
       name: item_name, // Map item_name to name
     });
 

@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { getPurchaseById, updatePurchase, deletePurchase } from '@/lib/db-mongo';
 import { updatePurchaseSchema } from '@/lib/validations-api';
 import { withErrorHandling, assertExists, logInfo } from '@/lib/errors';
@@ -39,8 +38,8 @@ export async function PATCH(
     const validatedData = updatePurchaseSchema.parse(body);
 
     // Map item_name to name if present
-    const updateData: any = { ...validatedData };
-    if (updateData.item_name) {
+    const updateData: Record<string, unknown> = { ...validatedData };
+    if ('item_name' in updateData && updateData.item_name) {
       updateData.name = updateData.item_name;
       delete updateData.item_name;
     }

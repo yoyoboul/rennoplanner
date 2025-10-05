@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { AlertTriangle, Trash2, Info, AlertCircle } from 'lucide-react';
+import { AlertTriangle, Trash2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ConfirmDialogProps {

@@ -5,7 +5,7 @@ import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Plus, Home, Loader2 } from 'lucide-react';
+import { Plus, Home } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { ProjectCardSkeleton } from '@/components/loading-skeleton';
@@ -63,7 +63,7 @@ export default function HomePage() {
             Planificateur de Rénovation
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
-            Gérez vos projets de rénovation avec l'aide de l'intelligence artificielle
+            Gérez vos projets de rénovation avec l&apos;aide de l&apos;intelligence artificielle
           </p>
         </div>
 

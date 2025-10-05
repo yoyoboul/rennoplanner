@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Calendar as BigCalendar, dateFnsLocalizer, View, Event } from 'react-big-calendar';
+import { Calendar as BigCalendar, dateFnsLocalizer, View, Event, ToolbarProps } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, parseISO, addDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -26,11 +26,11 @@ const localizer = dateFnsLocalizer({
 
 interface CalendarViewProps {
   rooms: RoomWithTasks[];
-  projectId: number;
+  projectId: string | number;
 }
 
 interface CalendarEvent extends Event {
-  id: number;
+  id: string | number;
   resource: TaskWithRoom & { room_name: string };
 }
 
@@ -53,7 +53,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   blocked: { bg: '#fee2e2', text: '#991b1b' },
 };
 
-export function CalendarView({ rooms, projectId }: CalendarViewProps) {
+export function CalendarView({ rooms }: CalendarViewProps) {
   const { updateTask } = useStore();
   const [view, setView] = useState<View>('month');
   const [date, setDate] = useState(new Date());
@@ -96,6 +96,7 @@ export function CalendarView({ rooms, projectId }: CalendarViewProps) {
     const planned = allTasks.filter(t => t.start_date).length;
     const unplanned = allTasks.length - planned;
     const thisMonth = events.filter(e => {
+      if (!e.start) return false;
       const eventDate = new Date(e.start);
       return eventDate.getMonth() === date.getMonth() && eventDate.getFullYear() === date.getFullYear();
     }).length;
@@ -108,7 +109,10 @@ export function CalendarView({ rooms, projectId }: CalendarViewProps) {
     setShowPlanner(true);
   }, []);
 
-  const handleSavePlanning = async (taskId: number, data: any) => {
+  const handleSavePlanning = async (
+    taskId: string | number,
+    data: { start_date?: string; end_date?: string; estimated_duration?: number }
+  ) => {
     await updateTask(taskId, data);
     setShowPlanner(false);
     setSelectedTask(null);
@@ -134,7 +138,7 @@ export function CalendarView({ rooms, projectId }: CalendarViewProps) {
     };
   }, []);
 
-  const CustomToolbar = ({ label, onNavigate, onView }: any) => {
+  const CustomToolbar = ({ label, onNavigate }: ToolbarProps<CalendarEvent, object>) => {
     return (
       <div className="flex items-center justify-between mb-4 pb-4 border-b">
         <div className="flex items-center gap-2">
@@ -150,7 +154,7 @@ export function CalendarView({ rooms, projectId }: CalendarViewProps) {
             size="sm"
             onClick={() => onNavigate('TODAY')}
           >
-            Aujourd'hui
+            Aujourd&apos;hui
           </Button>
           <Button
             variant="outline"

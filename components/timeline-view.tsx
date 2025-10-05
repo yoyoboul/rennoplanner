@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import type { Task, Room } from '@/lib/types';
-import { formatDate, getCategoryIcon, getStatusColor, cn } from '@/lib/utils';
+import { formatDate, getCategoryIcon, cn } from '@/lib/utils';
 import { 
   format, 
   parseISO, 
@@ -13,12 +13,7 @@ import {
   eachMonthOfInterval,
   eachWeekOfInterval,
   startOfWeek,
-  endOfWeek,
-  isSameMonth,
-  isToday,
-  isPast,
-  isFuture,
-  addDays
+  isPast
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar, ZoomIn, ZoomOut, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
@@ -33,7 +28,7 @@ type ViewMode = 'month' | 'week';
 
 export function TimelineView({ tasks, rooms = [] }: TimelineViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [hoveredTask, setHoveredTask] = useState<number | null>(null);
+  const [hoveredTask, setHoveredTask] = useState<string | number | null>(null);
 
   // Filtrer les tâches qui ont des dates
   const tasksWithDates = useMemo(() => {
@@ -42,7 +37,7 @@ export function TimelineView({ tasks, rooms = [] }: TimelineViewProps) {
 
   // Grouper les tâches par pièce
   const tasksByRoom = useMemo(() => {
-    const grouped = new Map<number, Task[]>();
+    const grouped = new Map<string | number, Task[]>();
     
     tasksWithDates.forEach(task => {
       const roomId = task.room_id;
@@ -85,6 +80,20 @@ export function TimelineView({ tasks, rooms = [] }: TimelineViewProps) {
       months: eachMonthOfInterval({ start: minDate, end: maxDate }),
       weeks: eachWeekOfInterval({ start: minDate, end: maxDate }, { locale: fr })
     };
+  }, [tasksWithDates]);
+
+  // Calculer les statistiques
+  const stats = useMemo(() => {
+    const total = tasksWithDates.length;
+    const completed = tasksWithDates.filter(t => t.status === 'completed').length;
+    const inProgress = tasksWithDates.filter(t => t.status === 'in_progress').length;
+    const delayed = tasksWithDates.filter(t => {
+      if (t.status === 'completed') return false;
+      if (!t.end_date) return false;
+      return isPast(parseISO(t.end_date));
+    }).length;
+
+    return { total, completed, inProgress, delayed };
   }, [tasksWithDates]);
 
   // Calculer la position de la ligne "aujourd'hui"
@@ -138,20 +147,6 @@ export function TimelineView({ tasks, rooms = [] }: TimelineViewProps) {
       duration
     };
   };
-
-  // Calculer les statistiques
-  const stats = useMemo(() => {
-    const total = tasksWithDates.length;
-    const completed = tasksWithDates.filter(t => t.status === 'completed').length;
-    const inProgress = tasksWithDates.filter(t => t.status === 'in_progress').length;
-    const delayed = tasksWithDates.filter(t => {
-      if (t.status === 'completed') return false;
-      if (!t.end_date) return false;
-      return isPast(parseISO(t.end_date));
-    }).length;
-
-    return { total, completed, inProgress, delayed };
-  }, [tasksWithDates]);
 
   return (
     <Card>
@@ -246,7 +241,6 @@ export function TimelineView({ tasks, rooms = [] }: TimelineViewProps) {
                 <div className="absolute inset-x-0 top-8 flex">
                   {weeks.map((week, idx) => {
                     const weekStart = startOfWeek(week, { locale: fr });
-                    const weekEnd = endOfWeek(week, { locale: fr });
                     const weekDays = 7;
                     const startDays = differenceInDays(weekStart, minDate);
                     const width = (weekDays / days) * 100;
@@ -287,7 +281,7 @@ export function TimelineView({ tasks, rooms = [] }: TimelineViewProps) {
               {todayPosition && (
                 <div className="flex items-center gap-2 ml-auto">
                   <div className="w-0.5 h-4 bg-purple-600"></div>
-                  <span className="font-medium text-purple-600">Aujourd'hui</span>
+                  <span className="font-medium text-purple-600">Aujourd&apos;hui</span>
                 </div>
               )}
             </div>

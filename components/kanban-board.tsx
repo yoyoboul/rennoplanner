@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
+import { Card, CardContent } from './ui/card';
 import type { Task, TaskStatus } from '@/lib/types';
 import { cn, formatCurrency, getCategoryIcon, getStatusColor, getPriorityColor } from '@/lib/utils';
 import { useStore } from '@/lib/store';

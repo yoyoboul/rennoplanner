@@ -32,10 +32,13 @@ export async function getProjectAnalytics(projectId: string) {
   const budgetUsageRate = projectData.total_budget ? (totalSpent / parseFloat(projectData.total_budget.toString())) * 100 : 0;
 
   // Tâches par catégorie
-  const tasksByCategory = tasks.reduce((acc: any, task: any) => {
-    acc[task.category] = (acc[task.category] || 0) + 1;
-    return acc;
-  }, {});
+  const tasksByCategory = tasks.reduce(
+    (acc: Record<string, number>, task: { category: string }) => {
+      acc[task.category] = (acc[task.category] || 0) + 1;
+      return acc;
+    },
+    {}
+  );
 
   // Coûts par pièce
   const costsByRoom = rooms.map(room => {
@@ -226,7 +229,6 @@ export async function getProjectSummary(projectId: string) {
   const tasks = projectData.rooms.flatMap(room => room.tasks);
   const purchases = await getPurchasesByProjectId(projectId);
 
-  const totalEstimated = tasks.reduce((sum, t) => sum + (parseFloat(t.estimated_cost?.toString() || '0')), 0);
   const totalActual = tasks.reduce((sum, t) => sum + (parseFloat(t.actual_cost?.toString() || '0')), 0);
   const totalPurchased = purchases.filter(p => p.status === 'purchased').reduce((sum, p) => sum + parseFloat(p.total_price?.toString() || '0'), 0);
   const totalSpent = totalActual + totalPurchased;
@@ -260,7 +262,13 @@ export async function suggestCostSavings(projectId: string) {
     }))
   ).filter(t => t.status !== 'completed');
 
-  const suggestions = [];
+  const suggestions: Array<{
+    task_id: string;
+    task_title: string;
+    current_cost: number;
+    potential_savings: number;
+    recommendations: string[];
+  }> = [];
 
   // Identifier les tâches coûteuses
   const expensiveTasks = tasks

@@ -37,10 +37,14 @@ export async function POST(request: Request) {
     const validatedData = createTaskSchema.parse(body);
 
     // Vérifier que la pièce existe
-    const room = await getRoomById(validatedData.room_id);
-    assertExists(room, 'Pièce', validatedData.room_id);
+    const room = await getRoomById(validatedData.room_id.toString());
+    assertExists(room, 'Pièce', validatedData.room_id.toString());
 
-    const task = await createTask(validatedData);
+    const task = await createTask({
+      ...validatedData,
+      room_id: validatedData.room_id.toString(),
+      dependencies: validatedData.dependencies ? [validatedData.dependencies] : undefined,
+    });
 
     logInfo('Task created', { taskId: task.id, roomId: validatedData.room_id, title: validatedData.title });
 

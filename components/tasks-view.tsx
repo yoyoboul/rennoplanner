@@ -12,15 +12,12 @@ import {
   AlertCircle,
   ChevronRight,
   ChevronDown,
-  Edit2,
   Trash2,
   MoreVertical,
-  Filter,
   Grid3x3,
   List,
   TrendingUp,
   Euro,
-  Calendar as CalendarIcon,
   Layers,
   CalendarPlus,
 } from 'lucide-react';
@@ -32,7 +29,7 @@ import { TaskPlanner } from './task-planner';
 
 interface TasksViewProps {
   rooms: RoomWithTasks[];
-  projectId: number;
+  projectId: string | number;
 }
 
 type ViewMode = 'list' | 'grid';
@@ -64,7 +61,7 @@ const categoryConfig: Record<TaskCategory, { label: string; emoji: string; color
   autre: { label: 'Autre', emoji: '📋', color: 'bg-slate-50 text-slate-700 border-slate-200' },
 };
 
-export function TasksView({ rooms, projectId }: TasksViewProps) {
+export function TasksView({ rooms }: TasksViewProps) {
   const { updateTask, deleteTask } = useStore();
   const { confirm, dialog } = useConfirmDialog();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
@@ -73,8 +70,7 @@ export function TasksView({ rooms, projectId }: TasksViewProps) {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<TaskCategory | 'all'>('all');
-  const [expandedRooms, setExpandedRooms] = useState<Set<number>>(new Set(rooms.map(r => r.id)));
-  const [taskToPlanning, setTaskToPlanning] = useState<(TaskWithRoom & { room_name: string; room_id: number }) | null>(null);
+  const [expandedRooms, setExpandedRooms] = useState<Set<string | number>>(new Set(rooms.map(r => r.id)));
 
   // Flatten all tasks with room info
   const allTasks = useMemo(() => {
@@ -82,6 +78,8 @@ export function TasksView({ rooms, projectId }: TasksViewProps) {
       room.tasks.map(task => ({ ...task, room_name: room.name, room_id: room.id }))
     );
   }, [rooms]);
+  
+  const [taskToPlanning, setTaskToPlanning] = useState<typeof allTasks[number] | null>(null);
 
   // Apply filters
   const filteredTasks = useMemo(() => {
@@ -126,7 +124,7 @@ export function TasksView({ rooms, projectId }: TasksViewProps) {
     return { total, completed, inProgress, blocked, totalEstimated, totalActual, completionRate };
   }, [allTasks]);
 
-  const toggleRoom = (roomId: number) => {
+  const toggleRoom = (roomId: string | number) => {
     setExpandedRooms(prev => {
       const next = new Set(prev);
       if (next.has(roomId)) next.delete(roomId);
@@ -135,12 +133,12 @@ export function TasksView({ rooms, projectId }: TasksViewProps) {
     });
   };
 
-  const handleStatusChange = async (taskId: number, newStatus: TaskStatus) => {
+  const handleStatusChange = async (taskId: string | number, newStatus: TaskStatus) => {
     await updateTask(taskId, { status: newStatus });
   };
 
-  const handleDeleteTask = async (taskId: number, taskTitle: string) => {
-    const confirmed = await confirm({
+  const handleDeleteTask = async (taskId: string | number, taskTitle: string) => {
+    await confirm({
       title: 'Supprimer la tâche',
       description: `Êtes-vous sûr de vouloir supprimer "${taskTitle}" ?`,
       confirmText: 'Supprimer',
@@ -151,7 +149,10 @@ export function TasksView({ rooms, projectId }: TasksViewProps) {
     });
   };
 
-  const handleSavePlanning = async (taskId: number, data: any) => {
+  const handleSavePlanning = async (
+    taskId: string | number,
+    data: { start_date?: string; end_date?: string; estimated_duration?: number }
+  ) => {
     await updateTask(taskId, data);
     setTaskToPlanning(null);
   };
@@ -408,11 +409,11 @@ export function TasksView({ rooms, projectId }: TasksViewProps) {
 }
 
 interface TaskCardProps {
-  task: TaskWithRoom & { room_name: string; room_id: number };
+  task: TaskWithRoom & { room_name: string; room_id: string | number };
   viewMode: ViewMode;
-  onStatusChange: (taskId: number, status: TaskStatus) => void;
-  onDelete: (taskId: number, title: string) => void;
-  onPlan: (task: TaskWithRoom & { room_name: string; room_id: number }) => void;
+  onStatusChange: (taskId: string | number, status: TaskStatus) => void;
+  onDelete: (taskId: string | number, title: string) => void;
+  onPlan: (task: TaskWithRoom & { room_name: string; room_id: string | number }) => void;
 }
 
 function TaskCard({ task, viewMode, onStatusChange, onDelete, onPlan }: TaskCardProps) {

@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { getTaskById, updateTask, deleteTask } from '@/lib/db-mongo';
 import { updateTaskSchema } from '@/lib/validations-api';
 import { withErrorHandling, assertExists, logInfo } from '@/lib/errors';
@@ -38,7 +37,12 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateTaskSchema.parse(body);
 
-    const task = await updateTask(id, validatedData);
+    // Remove null values
+    const updateData = Object.fromEntries(
+      Object.entries(validatedData).filter(([, v]) => v !== null)
+    );
+
+    const task = await updateTask(id, updateData);
 
     logInfo('Task updated', { taskId: id });
 

@@ -12,7 +12,6 @@ import {
   Check,
   Trash2,
   Edit2,
-  X,
   Package,
   ListChecks,
   ChevronDown,
@@ -30,7 +29,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
   const { purchases, fetchPurchases, createPurchase, updatePurchase, deletePurchase } = useStore();
   const { confirm, dialog } = useConfirmDialog();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | number | null>(null);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     planned: true,
     in_cart: true,
@@ -82,8 +81,8 @@ export function ShoppingList({ project }: ShoppingListProps) {
       category: formData.category || undefined,
       item_type: formData.item_type,
       supplier: formData.supplier || undefined,
-      room_id: formData.room_id ? parseInt(formData.room_id) : undefined,
-      task_id: formData.task_id ? parseInt(formData.task_id) : undefined,
+      room_id: formData.room_id || undefined,
+      task_id: formData.task_id || undefined,
       notes: formData.notes || undefined,
       status: 'planned' as PurchaseStatus,
     };
@@ -113,8 +112,8 @@ export function ShoppingList({ project }: ShoppingListProps) {
     setShowAddForm(true);
   };
 
-  const handleStatusChange = async (id: number, status: PurchaseStatus) => {
-    const updateData: any = { status };
+  const handleStatusChange = async (id: string | number, status: PurchaseStatus) => {
+    const updateData: { status: PurchaseStatus; purchase_date?: string } = { status };
     if (status === 'purchased') {
       updateData.purchase_date = new Date().toISOString().split('T')[0];
     }
@@ -209,7 +208,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
               )}
               {purchase.purchase_date && (
                 <div>
-                  <span className="font-medium">Date d'achat:</span>{' '}
+                  <span className="font-medium">Date d&apos;achat:</span>{' '}
                   {formatDate(purchase.purchase_date)}
                 </div>
               )}
@@ -344,7 +343,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Nom de l'article *</label>
+                  <label className="block text-sm font-medium mb-2">Nom de l&apos;article *</label>
                   <Input
                     value={formData.item_name}
                     onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
@@ -353,7 +352,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Type d'article *</label>
+                  <label className="block text-sm font-medium mb-2">Type d&apos;article *</label>
                   <select
                     className="w-full h-10 rounded-md border border-gray-300 px-3 py-2"
                     value={formData.item_type}

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import type { ProjectWithDetails } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
-import { CheckCircle2, Clock, AlertCircle, TrendingUp, Euro } from 'lucide-react';
+import { CheckCircle2, Clock, AlertCircle, TrendingUp } from 'lucide-react';
 
 interface ProjectStatsProps {
   project: ProjectWithDetails;

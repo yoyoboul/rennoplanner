@@ -1,4 +1,3 @@
-import { NextResponse } from 'next/server';
 import { getRoomById, updateRoom, deleteRoom } from '@/lib/db-mongo';
 import { updateRoomSchema } from '@/lib/validations-api';
 import { withErrorHandling, assertExists, logInfo } from '@/lib/errors';
@@ -38,7 +37,12 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateRoomSchema.parse(body);
 
-    const room = await updateRoom(id, validatedData);
+    // Remove null values
+    const updateData = Object.fromEntries(
+      Object.entries(validatedData).filter(([, v]) => v !== null)
+    );
+
+    const room = await updateRoom(id, updateData);
 
     logInfo('Room updated', { roomId: id });
 

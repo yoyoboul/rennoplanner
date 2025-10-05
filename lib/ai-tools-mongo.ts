@@ -5,16 +5,13 @@ import {
   getTasksByRoomId,
   createRoom,
   updateProject as updateProjectDb,
-  getProjectById,
   createPurchase,
   updatePurchase,
   deletePurchase,
   getPurchasesByProjectId,
-  getRoomById,
-  getTaskById,
   getPurchaseById,
+  getRoomById,
 } from './db-mongo';
-import type { TaskCategory, TaskStatus, TaskPriority } from './types-mongo';
 import { 
   getProjectAnalytics, 
   detectBudgetRisks, 
@@ -457,7 +454,10 @@ export const availableTools = [
 ];
 
 // Tool execution functions
-export async function executeTool(toolName: string, args: any): Promise<any> {
+export async function executeTool(
+  toolName: string,
+  args: Record<string, unknown>
+): Promise<unknown> {
   switch (toolName) {
     case 'add_task':
       return addTask(args);
@@ -482,59 +482,68 @@ export async function executeTool(toolName: string, args: any): Promise<any> {
     case 'get_shopping_summary':
       return getShoppingSummaryFunc(args);
     case 'get_project_summary':
-      return getProjectSummary(args.project_id);
+      return getProjectSummary(args.project_id as string);
     case 'get_project_analytics':
-      return getProjectAnalytics(args.project_id);
+      return getProjectAnalytics(args.project_id as string);
     case 'detect_budget_risks':
-      return detectBudgetRisks(args.project_id);
+      return detectBudgetRisks(args.project_id as string);
     case 'suggest_cost_savings':
-      return suggestCostSavings(args.project_id);
+      return suggestCostSavings(args.project_id as string);
     case 'suggest_task_order':
-      return suggestTaskOrder(args.project_id);
+      return suggestTaskOrder(args.project_id as string);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
 }
 
-async function addTask(args: any) {
+async function addTask(args: Record<string, unknown>) {
   const task = await createTask({
-    room_id: args.room_id,
-    title: args.title,
-    description: args.description,
-    category: args.category,
-    estimated_cost: args.estimated_cost || 0,
-    estimated_duration: args.estimated_duration,
-    priority: args.priority || 'medium',
-    start_date: args.start_date,
-    end_date: args.end_date,
+    room_id: args.room_id as string,
+    title: args.title as string,
+    description: args.description as string | undefined,
+    category: args.category as
+      | 'plomberie'
+      | 'electricite'
+      | 'peinture'
+      | 'menuiserie'
+      | 'carrelage'
+      | 'platrerie'
+      | 'isolation'
+      | 'demolition'
+      | 'autre',
+    estimated_cost: (args.estimated_cost as number) || 0,
+    estimated_duration: args.estimated_duration as number | undefined,
+    priority: (args.priority as 'low' | 'medium' | 'high' | 'urgent') || 'medium',
+    start_date: args.start_date as string | undefined,
+    end_date: args.end_date as string | undefined,
     status: 'todo',
   });
 
   return { success: true, task };
 }
 
-async function updateTaskFunc(args: any) {
+async function updateTaskFunc(args: Record<string, unknown>) {
   const { task_id, ...updates } = args;
-  const task = await updateTaskDb(task_id, updates);
+  const task = await updateTaskDb(task_id as string, updates);
   return { success: true, task };
 }
 
-async function deleteTaskFunc(args: any) {
-  await deleteTaskDb(args.task_id);
+async function deleteTaskFunc(args: Record<string, unknown>) {
+  await deleteTaskDb(args.task_id as string);
   return { success: true, message: `Tâche ${args.task_id} supprimée` };
 }
 
-async function listTasks(args: any) {
+async function listTasks(args: Record<string, unknown>) {
   const { room_id, status } = args;
 
   if (!room_id) {
     return { success: false, error: 'room_id requis' };
   }
 
-  let tasks = await getTasksByRoomId(room_id);
+  let tasks = await getTasksByRoomId(room_id as string);
 
   // Ajouter le nom de la pièce
-  const room = await getRoomById(room_id);
+  const room = await getRoomById(room_id as string);
   tasks = tasks.map(task => ({
     ...task,
     room_name: room?.name || 'Unknown',
@@ -547,65 +556,65 @@ async function listTasks(args: any) {
   return { success: true, tasks };
 }
 
-async function addRoomFunc(args: any) {
+async function addRoomFunc(args: Record<string, unknown>) {
   const room = await createRoom({
-    project_id: args.project_id,
-    name: args.name,
-    description: args.description,
-    surface_area: args.surface_area,
-    allocated_budget: args.allocated_budget,
+    project_id: args.project_id as string,
+    name: args.name as string,
+    description: args.description as string | undefined,
+    surface_area: args.surface_area as number | undefined,
+    allocated_budget: args.allocated_budget as number | undefined,
   });
 
   return { success: true, room };
 }
 
-async function updateProjectFunc(args: any) {
+async function updateProjectFunc(args: Record<string, unknown>) {
   const { project_id, ...updates } = args;
-  const project = await updateProjectDb(project_id, updates);
+  const project = await updateProjectDb(project_id as string, updates);
   return { success: true, project };
 }
 
-async function addPurchaseFunc(args: any) {
+async function addPurchaseFunc(args: Record<string, unknown>) {
   const purchase = await createPurchase({
-    project_id: args.project_id,
-    room_id: args.room_id,
-    task_id: args.task_id,
-    name: args.item_name,
-    description: args.description,
-    quantity: args.quantity || 1,
-    unit_price: args.unit_price || 0,
-    total_price: (args.quantity || 1) * (args.unit_price || 0),
-    category: args.category,
-    supplier: args.supplier,
-    status: args.status || 'planned',
+    project_id: args.project_id as string,
+    room_id: args.room_id as string | undefined,
+    task_id: args.task_id as string | undefined,
+    name: args.item_name as string,
+    description: args.description as string | undefined,
+    quantity: (args.quantity as number) || 1,
+    unit_price: (args.unit_price as number) || 0,
+    total_price: ((args.quantity as number) || 1) * ((args.unit_price as number) || 0),
+    category: args.category as string | undefined,
+    supplier: args.supplier as string | undefined,
+    status: (args.status as 'planned' | 'in_cart' | 'purchased') || 'planned',
   });
 
   return { success: true, purchase };
 }
 
-async function updatePurchaseFunc(args: any) {
+async function updatePurchaseFunc(args: Record<string, unknown>) {
   const { purchase_id, ...updates } = args;
   
   // Recalculate total_price if needed
-  const existing = await getPurchaseById(purchase_id);
+  const existing = await getPurchaseById(purchase_id as string);
   if (existing) {
-    const quantity = updates.quantity ?? parseFloat(existing.quantity?.toString() || '1');
-    const unit_price = updates.unit_price ?? parseFloat(existing.unit_price?.toString() || '0');
-    updates.total_price = quantity * unit_price;
+    const quantity = (updates.quantity as number) ?? parseFloat(existing.quantity?.toString() || '1');
+    const unit_price = (updates.unit_price as number) ?? parseFloat(existing.unit_price?.toString() || '0');
+    (updates as Record<string, unknown>).total_price = quantity * unit_price;
   }
 
-  const purchase = await updatePurchase(purchase_id, updates);
+  const purchase = await updatePurchase(purchase_id as string, updates);
   return { success: true, purchase };
 }
 
-async function deletePurchaseFunc(args: any) {
-  await deletePurchase(args.purchase_id);
+async function deletePurchaseFunc(args: Record<string, unknown>) {
+  await deletePurchase(args.purchase_id as string);
   return { success: true, message: `Achat ${args.purchase_id} supprimé` };
 }
 
-async function listPurchases(args: any) {
+async function listPurchases(args: Record<string, unknown>) {
   const { project_id, status } = args;
-  let purchases = await getPurchasesByProjectId(project_id);
+  let purchases = await getPurchasesByProjectId(project_id as string);
 
   if (status) {
     purchases = purchases.filter(p => p.status === status);
@@ -614,8 +623,8 @@ async function listPurchases(args: any) {
   return { success: true, purchases };
 }
 
-async function getShoppingSummaryFunc(args: any) {
-  const purchases = await getPurchasesByProjectId(args.project_id);
+async function getShoppingSummaryFunc(args: Record<string, unknown>) {
+  const purchases = await getPurchasesByProjectId(args.project_id as string);
 
   const summary = {
     total_planned: 0,

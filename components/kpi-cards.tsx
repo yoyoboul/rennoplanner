@@ -14,7 +14,6 @@ interface KPICardsProps {
 export function KPICards({ project, purchases }: KPICardsProps) {
   const stats = useMemo(() => {
     const totalBudget = project.total_budget || 0;
-    const totalAllocated = project.rooms.reduce((sum, room) => sum + (room.allocated_budget || 0), 0);
     
     const totalPurchased = purchases
       .filter(p => p.status === 'purchased')

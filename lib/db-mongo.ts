@@ -11,6 +11,8 @@ import type {
   Purchase,
   ProjectWithRooms,
   RoomWithTasks,
+} from './types-mongo';
+import {
   projectToApi,
   roomToApi,
   taskToApi,
@@ -215,17 +217,17 @@ export async function getTaskById(id: string): Promise<Task | null> {
   return task ? taskToApi(task) : null;
 }
 
-export async function createTask(data: any): Promise<Task> {
+export async function createTask(data: Partial<Task>): Promise<Task> {
   const db = await getDatabase();
   const now = new Date();
   
   const taskDoc: TaskMongo = {
-    room_id: new ObjectId(data.room_id),
-    title: data.title,
+    room_id: new ObjectId(data.room_id!),
+    title: data.title!,
     description: data.description,
     status: data.status || 'todo',
     priority: data.priority || 'medium',
-    category: data.category,
+    category: data.category!,
     estimated_cost: data.estimated_cost,
     actual_cost: data.actual_cost,
     estimated_duration: data.estimated_duration,
@@ -243,10 +245,16 @@ export async function createTask(data: any): Promise<Task> {
   return taskToApi(taskDoc);
 }
 
-export async function updateTask(id: string, data: any): Promise<Task | null> {
+export async function updateTask(
+  id: string,
+  data: Partial<Task> & { start_date?: string; end_date?: string }
+): Promise<Task | null> {
   const db = await getDatabase();
   
-  const updateData: any = { ...data, updated_at: new Date() };
+  const updateData: Record<string, unknown> = {
+    ...data,
+    updated_at: new Date(),
+  };
   
   if (data.start_date) updateData.start_date = new Date(data.start_date);
   if (data.end_date) updateData.end_date = new Date(data.end_date);
@@ -291,19 +299,19 @@ export async function getPurchaseById(id: string): Promise<Purchase | null> {
   return purchase ? purchaseToApi(purchase) : null;
 }
 
-export async function createPurchase(data: any): Promise<Purchase> {
+export async function createPurchase(data: Partial<Purchase>): Promise<Purchase> {
   const db = await getDatabase();
   const now = new Date();
   
   const purchaseDoc: PurchaseMongo = {
-    project_id: new ObjectId(data.project_id),
+    project_id: new ObjectId(data.project_id!),
     room_id: data.room_id ? new ObjectId(data.room_id) : undefined,
     task_id: data.task_id ? new ObjectId(data.task_id) : undefined,
-    name: data.name,
+    name: data.name!,
     description: data.description,
-    quantity: data.quantity,
-    unit_price: data.unit_price,
-    total_price: data.total_price || (data.quantity * data.unit_price),
+    quantity: data.quantity!,
+    unit_price: data.unit_price!,
+    total_price: data.total_price || (data.quantity! * data.unit_price!),
     category: data.category,
     supplier: data.supplier,
     status: data.status || 'planned',
@@ -318,10 +326,16 @@ export async function createPurchase(data: any): Promise<Purchase> {
   return purchaseToApi(purchaseDoc);
 }
 
-export async function updatePurchase(id: string, data: any): Promise<Purchase | null> {
+export async function updatePurchase(
+  id: string,
+  data: Partial<Purchase> & { purchase_date?: string }
+): Promise<Purchase | null> {
   const db = await getDatabase();
   
-  const updateData: any = { ...data, updated_at: new Date() };
+  const updateData: Record<string, unknown> = {
+    ...data,
+    updated_at: new Date(),
+  };
   
   if (data.purchase_date) updateData.purchase_date = new Date(data.purchase_date);
   if (data.room_id) updateData.room_id = new ObjectId(data.room_id);

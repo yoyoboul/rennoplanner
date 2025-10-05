@@ -39,11 +39,11 @@ export async function POST(request: Request) {
     const { project_id, name, description, surface_area, allocated_budget } = validatedData;
 
     // Vérifier que le projet existe
-    const project = await getProjectById(project_id);
-    assertExists(project, 'Projet', project_id);
+    const project = await getProjectById(project_id.toString());
+    assertExists(project, 'Projet', project_id.toString());
 
     const room = await createRoom({
-      project_id,
+      project_id: project_id.toString(),
       name,
       description,
       surface_area,

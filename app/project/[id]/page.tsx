@@ -22,7 +22,6 @@ import { StatCardSkeleton, Spinner } from '@/components/loading-skeleton';
 import { SlideOver } from '@/components/slide-over';
 import { 
   Plus, 
-  Loader2, 
   ArrowLeft, 
   Home as HomeIcon, 
   DollarSign, 
@@ -42,9 +41,9 @@ import { formatCurrency } from '@/lib/utils';
 
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const projectId = parseInt(resolvedParams.id);
-  const { currentProject, fetchProject, createRoom, createTask, deleteRoom, deleteTask, purchases, fetchPurchases } = useStore();
-  const { confirm, dialog } = useConfirmDialog();
+  const projectId = resolvedParams.id;
+  const { currentProject, fetchProject, createRoom, createTask, purchases, fetchPurchases } = useStore();
+  const { dialog } = useConfirmDialog();
   const { isOpen: searchOpen, setIsOpen: setSearchOpen } = useGlobalSearch();
   const [view, setView] = useState<'overview' | 'tasks' | 'kanban' | 'timeline' | 'calendar' | 'chat' | 'shopping'>('overview');
   const [showAddRoom, setShowAddRoom] = useState(false);
@@ -83,7 +82,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     await createTask({
-      room_id: parseInt(newTask.room_id),
+      room_id: newTask.room_id,
       title: newTask.title,
       description: newTask.description,
       category: newTask.category,
@@ -448,7 +447,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
             <TabsList className="w-full sm:w-auto inline-flex justify-start min-w-max sm:min-w-0">
               <TabsTrigger value="overview" className="gap-2">
                 <LayoutGrid className="w-5 h-5 flex-shrink-0" />
-                <span className="hidden sm:inline">Vue d'ensemble</span>
+                <span className="hidden sm:inline">Vue d&apos;ensemble</span>
                 <span className="sm:hidden">Vue</span>
               </TabsTrigger>
               <TabsTrigger value="tasks" className="gap-2">

@@ -14,6 +14,7 @@ import {
 import { openaiRateLimiter, checkRateLimit } from '@/lib/rate-limiter';
 import { buildProjectContext, buildRoomsContext } from '@/lib/ai-context';
 import { SYSTEM_PROMPT, CONTEXT_PROMPT, ROOMS_PROMPT } from '@/lib/ai-prompts';
+import { db } from '@/lib/db';
 
 export const runtime = 'nodejs'; // ou 'edge' si vos libs sont compatibles
 
@@ -37,7 +38,7 @@ function redactToolTraces(text: string | null | undefined): string {
   const originalText = text;
   const originalLength = text.length;
   
-  let cleaned = text
+  const cleaned = text
     // mentions de canaux internes
     .replace(/\bto=functions\.[\w-]+\b/gi, '')
     // IDs d'appels internes (ex: call_abc123) mais pas dans des phrases normales
@@ -123,10 +124,11 @@ async function runToolCalls(
           name: fnName,
           content: JSON.stringify(result),
         };
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as Error;
         logWarn('AI tool execution failed', {
           tool: fnName,
-          error: err?.message,
+          error: error?.message,
           projectId,
         });
 
@@ -136,7 +138,7 @@ async function runToolCalls(
           name: fnName,
           content: JSON.stringify({
             success: false,
-            error: err?.message || "Erreur lors de l'exécution",
+            error: error?.message || "Erreur lors de l'exécution",
           }),
         };
       }
@@ -162,7 +164,7 @@ function persistAssistantMessage(projectId: number, content: string) {
     db.prepare(
       `INSERT INTO chat_history (project_id, role, content) VALUES (?, ?, ?)`
     ).run(projectId, 'assistant', content);
-  } catch (e) {
+  } catch {
     logWarn('Failed to save chat history', { projectId });
   }
 }
@@ -184,14 +186,25 @@ async function completeWithToolsLoop({
   maxToolRounds =30,
 }: {
   systemMessage: { role: 'system'; content: string };
-  userAndContextMessages: any[];
+  userAndContextMessages: Array<{
+    role: string;
+    content: string;
+    tool_call_id?: string;
+    name?: string;
+  }>;
   projectId: number;
   initialModel?: string;
   finalModel?: string;
   maxToolRounds?: number;
 }) {
   // Messages cumulés envoyés au modèle
-  const convo: any[] = [systemMessage, ...userAndContextMessages];
+  const convo: Array<{
+    role: string;
+    content: string;
+    tool_call_id?: string;
+    name?: string;
+    tool_calls?: Array<{ id: string; function: { name: string; arguments: string }; type: 'function' }>;
+  }> = [systemMessage, ...userAndContextMessages];
 
   // 1er appel (rapide) avec GPT-5 Mini (pour détecter les tools éventuellement)
   const first = await withRetry(
@@ -203,7 +216,7 @@ async function completeWithToolsLoop({
           tools: availableTools,
           tool_choice: 'auto',
           reasoning_effort: 'medium',
-          parallel_tool_calls: true as any,   // ⬅️ utile pour add_task multiples
+          parallel_tool_calls: true,   // ⬅️ utile pour add_task multiples
 
           // Paramètres de génération (ajuste selon ton usage)
           temperature: 1,
@@ -211,16 +224,15 @@ async function completeWithToolsLoop({
           // IMPORTANT pour GPT-5 : respecter les nouveaux champs de sortie
           max_completion_tokens: 20000, // capacité large quand il y a des outils
           response_format: { type: 'text' },
-          // optimisation calls/tools
-          parallel_tool_calls: true as any, // disponible sur certains déploiements GPT-5
-        } as any);
-      } catch (error: any) {
-        if (error?.status === 429) {
+        } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming);
+      } catch (error: unknown) {
+        const err = error as { status?: number };
+        if (err?.status === 429) {
           logWarn('OpenAI rate limit hit', { projectId });
-          throw new ExternalServiceError('OpenAI (limite atteinte)', error);
+          throw new ExternalServiceError('OpenAI (limite atteinte)', error as Error);
         }
-        if (error?.status >= 500) {
-          throw new ExternalServiceError('OpenAI', error);
+        if (err?.status && err.status >= 500) {
+          throw new ExternalServiceError('OpenAI', error as Error);
         }
         throw error;
       }
@@ -230,15 +242,30 @@ async function completeWithToolsLoop({
   );
 
   let assistantMsg = first.choices[0].message;
-  convo.push(assistantMsg);
+  convo.push({
+    role: assistantMsg.role,
+    content: assistantMsg.content || '',
+    tool_calls: assistantMsg.tool_calls as Array<{
+      id: string;
+      function: { name: string; arguments: string };
+      type: 'function';
+    }>,
+  });
 
-  // Boucler sur les tools s’il y en a
+  // Boucler sur les tools s'il y en a
   let rounds = 0;
   while (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0 && rounds < maxToolRounds) {
     rounds += 1;
 
     // Exécuter tous les outils détectés
-    const toolResults = await runToolCalls(assistantMsg.tool_calls as any, projectId);
+    const toolResults = await runToolCalls(
+      assistantMsg.tool_calls as Array<{
+        id: string;
+        function: { name: string; arguments: string };
+        type: 'function';
+      }>,
+      projectId
+    );
     convo.push(...toolResults);
 
     // Appel "final" (plus réfléchi) avec GPT-5
@@ -257,11 +284,12 @@ async function completeWithToolsLoop({
             reasoning_effort: 'medium',
             max_completion_tokens: 20000, // borne plus raisonnable
             response_format: { type: 'text' },
-            parallel_tool_calls: true as any,
-          } as any);
-        } catch (error: any) {
-          if (error?.status >= 500) {
-            throw new ExternalServiceError('OpenAI', error);
+            parallel_tool_calls: true,
+          } as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming);
+        } catch (error: unknown) {
+          const err = error as { status?: number };
+          if (err?.status && err.status >= 500) {
+            throw new ExternalServiceError('OpenAI', error as Error);
           }
           throw error;
         }
@@ -271,7 +299,15 @@ async function completeWithToolsLoop({
     );
 
     assistantMsg = next.choices[0].message;
-    convo.push(assistantMsg);
+    convo.push({
+      role: assistantMsg.role,
+      content: assistantMsg.content || '',
+      tool_calls: assistantMsg.tool_calls as Array<{
+        id: string;
+        function: { name: string; arguments: string };
+        type: 'function';
+      }>,
+    });
   }
 
   // Si pas de contenu textuel (rare), fournir un message par défaut
@@ -295,7 +331,14 @@ async function completeWithToolsLoop({
   
   // Si le nettoyage a tout supprimé et qu'on a des tool_calls, générer un message par défaut
   if (!content && assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
-    const toolNames = assistantMsg.tool_calls.map((tc: any) => tc.function?.name).filter(Boolean);
+    const toolNames = assistantMsg.tool_calls
+      .map((tc) => {
+        if ('function' in tc && tc.function?.name) {
+          return tc.function.name;
+        }
+        return undefined;
+      })
+      .filter(Boolean);
     content = `✅ Action${toolNames.length > 1 ? 's' : ''} effectuée${toolNames.length > 1 ? 's' : ''} avec succès.`;
     logWarn('redactToolTraces removed all content, using fallback', { projectId, originalLength, toolNames });
   }
@@ -325,7 +368,15 @@ async function completeWithToolsLoop({
 
   return {
     message: content,
-    tool_calls: assistantMsg.tool_calls?.map((tc: any) => tc.function?.name) ?? [],
+    tool_calls:
+      assistantMsg.tool_calls
+        ?.map((tc) => {
+          if ('function' in tc && tc.function?.name) {
+            return tc.function.name;
+          }
+          return undefined;
+        })
+        .filter(Boolean) ?? [],
     tool_results: (assistantMsg.tool_calls?.length ?? 0) > 0 ? 'executed' : 'none',
   };
 }
@@ -351,7 +402,7 @@ export async function POST(request: Request) {
     );
 
     // Construit le message système enrichi
-    const systemMessage = await buildSystemMessage(project_id);
+    const systemMessage = await buildSystemMessage(project_id.toString());
 
     // Boucle d'inférence + tools (multi-rounds)
     const result = await completeWithToolsLoop({

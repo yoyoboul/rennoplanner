@@ -40,7 +40,7 @@ export function initDB() {
   // Migration: Ajouter allocated_budget si elle n'existe pas
   try {
     db.exec(`ALTER TABLE rooms ADD COLUMN allocated_budget REAL DEFAULT 0`);
-  } catch (e) {
+  } catch {
     // La colonne existe déjà, ignorer l'erreur
   }
 
@@ -125,7 +125,7 @@ export function initDB() {
   // Migration: Ajouter item_type si elle n'existe pas
   try {
     db.exec(`ALTER TABLE purchases ADD COLUMN item_type TEXT DEFAULT 'materiaux'`);
-  } catch (e) {
+  } catch {
     // La colonne existe déjà, ignorer l'erreur
   }
 }
@@ -133,4 +133,5 @@ export function initDB() {
 // Initialize on import
 initDB();
 
+export { db };
 export default db;

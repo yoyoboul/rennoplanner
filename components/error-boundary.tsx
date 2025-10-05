@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <ul className="list-disc list-inside space-y-2 text-sm text-gray-600">
                   <li>Recharger la page</li>
                   <li>Vérifier votre connexion internet</li>
-                  <li>Retourner à la page d'accueil</li>
+                  <li>Retourner à la page d&apos;accueil</li>
                   <li>Contacter le support si le problème persiste</li>
                 </ul>
               </div>
@@ -103,7 +103,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Link href="/">
                   <Button variant="outline" className="gap-2">
                     <Home className="w-4 h-4" />
-                    Page d'accueil
+                    Page d&apos;accueil
                   </Button>
                 </Link>
               </div>

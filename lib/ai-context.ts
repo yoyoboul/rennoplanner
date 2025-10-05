@@ -1,5 +1,5 @@
 import { getProjectById, getPurchasesByProjectId } from './db-mongo';
-import type { ProjectWithDetails, PurchaseWithDetails } from './types';
+import type { PurchaseStatus, TaskPriority, TaskStatus } from './types';
 
 /**
  * Construit un contexte riche et structuré du projet pour l'IA
@@ -24,7 +24,12 @@ export async function buildProjectContext(projectId: string): Promise<string> {
   const purchases = await getPurchasesByProjectId(projectId);
 
   // Calculer les statistiques
-  const stats = calculateProjectStats(projectData, rooms, tasks, purchases);
+  const stats = calculateProjectStats(
+    { total_budget: projectData.total_budget || 0 },
+    rooms,
+    tasks,
+    purchases
+  );
 
   // Construire le contexte structuré
   return `
@@ -62,7 +67,7 @@ ${tasks.filter(t => t.priority === 'urgent' || t.priority === 'high').slice(0, 5
 
 ### Tâches Bloquées
 ${tasks.filter(t => t.status === 'blocked').map(t => 
-  `- ${t.title} (${t.room_name})${t.notes ? ` - Raison: ${t.notes}` : ''}`
+  `- ${t.title} (${t.room_name})`
 ).join('\n') || 'Aucune tâche bloquée'}
 
 ## Achats (${purchases.length})
@@ -87,7 +92,17 @@ ${stats.risks.join('\n') || '✅ Aucun risque détecté'}
 /**
  * Calcule les statistiques du projet
  */
-function calculateProjectStats(project: any, rooms: any[], tasks: any[], purchases: any[]) {
+function calculateProjectStats(
+  project: { total_budget: number },
+  rooms: Array<{ allocated_budget?: number }>,
+  tasks: Array<{
+    estimated_cost?: number;
+    actual_cost?: number;
+    status: TaskStatus;
+    priority: TaskPriority;
+  }>,
+  purchases: Array<{ status: PurchaseStatus; total_price: number }>
+) {
   const totalAllocated = rooms.reduce((sum, r) => sum + (r.allocated_budget || 0), 0);
   const totalEstimatedCost = tasks.reduce((sum, t) => sum + (t.estimated_cost || 0), 0);
   const totalActualCost = tasks.reduce((sum, t) => sum + (t.actual_cost || 0), 0);

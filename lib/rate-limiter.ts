@@ -216,14 +216,14 @@ export class AdaptiveRateLimiter extends RateLimiter {
     // Si l'utilisateur est marqué comme abuseur, limite plus stricte
     if (this.abusers.has(identifier)) {
       const strictConfig = {
-        maxRequests: Math.floor(this.config.maxRequests / 2),
-        windowMs: this.config.windowMs,
+        maxRequests: Math.floor(this['config'].maxRequests / 2),
+        windowMs: this['config'].windowMs,
       };
       
-      const log = this.requests.get(identifier) || { timestamps: [] };
+      const log = this['requests'].get(identifier) || { timestamps: [] };
       const now = Date.now();
       const windowStart = now - strictConfig.windowMs;
-      const validTimestamps = log.timestamps.filter((ts) => ts > windowStart);
+      const validTimestamps = log.timestamps.filter((ts: number) => ts > windowStart);
       
       if (validTimestamps.length >= strictConfig.maxRequests) {
         return false;
@@ -267,4 +267,3 @@ export async function withRateLimit<T>(
   checkRateLimit(limiter, identifier);
   return handler();
 }
-

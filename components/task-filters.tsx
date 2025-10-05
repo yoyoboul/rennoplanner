@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { Input } from './ui/button';
 import { Search, Filter } from 'lucide-react';
 import type { TaskStatus, TaskPriority, TaskCategory } from '@/lib/types';
 

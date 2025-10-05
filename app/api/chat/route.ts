@@ -434,6 +434,6 @@ export async function GET(request: Request) {
       )
       .all(project_id);
 
-    return NextResponse.json(history);
+    return history;
   });
 }

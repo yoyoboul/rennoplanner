@@ -147,17 +147,19 @@ export interface ProjectWithRooms extends Project {
 
 // Fonctions de conversion MongoDB → API
 export function projectToApi(doc: ProjectMongo): Project {
+  const now = new Date().toISOString();
   return {
     id: doc._id!.toString(),
     name: doc.name,
     description: doc.description,
     total_budget: doc.total_budget,
-    created_at: doc.created_at.toISOString(),
-    updated_at: doc.updated_at.toISOString(),
+    created_at: doc.created_at?.toISOString() || now,
+    updated_at: doc.updated_at?.toISOString() || now,
   };
 }
 
 export function roomToApi(doc: RoomMongo): Room {
+  const now = new Date().toISOString();
   return {
     id: doc._id!.toString(),
     project_id: doc.project_id.toString(),
@@ -165,12 +167,13 @@ export function roomToApi(doc: RoomMongo): Room {
     description: doc.description,
     surface_area: doc.surface_area,
     allocated_budget: doc.allocated_budget,
-    created_at: doc.created_at.toISOString(),
-    updated_at: doc.updated_at.toISOString(),
+    created_at: doc.created_at?.toISOString() || now,
+    updated_at: doc.updated_at?.toISOString() || now,
   };
 }
 
 export function taskToApi(doc: TaskMongo): Task {
+  const now = new Date().toISOString();
   return {
     id: doc._id!.toString(),
     room_id: doc.room_id.toString(),
@@ -186,12 +189,13 @@ export function taskToApi(doc: TaskMongo): Task {
     start_date: doc.start_date?.toISOString(),
     end_date: doc.end_date?.toISOString(),
     dependencies: doc.dependencies?.map(id => id.toString()),
-    created_at: doc.created_at.toISOString(),
-    updated_at: doc.updated_at.toISOString(),
+    created_at: doc.created_at?.toISOString() || now,
+    updated_at: doc.updated_at?.toISOString() || now,
   };
 }
 
 export function purchaseToApi(doc: PurchaseMongo): Purchase {
+  const now = new Date().toISOString();
   return {
     id: doc._id!.toString(),
     project_id: doc.project_id.toString(),
@@ -206,8 +210,8 @@ export function purchaseToApi(doc: PurchaseMongo): Purchase {
     supplier: doc.supplier,
     status: doc.status,
     purchase_date: doc.purchase_date?.toISOString(),
-    created_at: doc.created_at.toISOString(),
-    updated_at: doc.updated_at.toISOString(),
+    created_at: doc.created_at?.toISOString() || now,
+    updated_at: doc.updated_at?.toISOString() || now,
   };
 }
 

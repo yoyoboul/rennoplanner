@@ -33,7 +33,7 @@ export { clientPromise };
 // Helper pour obtenir la base de données
 export async function getDatabase(): Promise<Db> {
   const client = await clientPromise;
-  return client.db('reno-planner');
+  return client.db('renoplanner');
 }
 
 // Helper pour convertir ObjectId

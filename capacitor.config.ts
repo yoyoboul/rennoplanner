@@ -5,13 +5,11 @@ const config: CapacitorConfig = {
   appName: 'Reno Planner',
   webDir: 'out',
   
-  // Configuration serveur - TOUJOURS actif car l'app nécessite les API routes
+  // Configuration serveur - Pointe vers Vercel pour fonctionner partout
   server: {
-    // Pour émulateur Android : utilisez 10.0.2.2
-    // Pour appareil réel : changez cette IP vers votre IP locale
-    // Pour trouver votre IP : ipconfig getifaddr en0 (Mac) ou ipconfig (Windows)
-    url: 'http://192.168.1.90:3000',
-    cleartext: true,
+    // URL de production Vercel - l'app fonctionnera depuis n'importe où
+    url: 'https://rennoplanner.vercel.app',
+    cleartext: false, // HTTPS donc false
     androidScheme: 'https',
   },
 

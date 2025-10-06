@@ -64,7 +64,6 @@ export async function POST(request: Request) {
       project_id: project_id.toString(),
       room_id: room_id?.toString(),
       task_id: task_id?.toString(),
-      name: item_name, // Map item_name to name
     });
 
     logInfo('Purchase created', { purchaseId: purchase.id, projectId: project_id, item: item_name });

@@ -258,6 +258,11 @@ export const availableTools = [
             type: 'string',
             description: 'Catégorie de l\'article (peinture, plomberie, etc.)',
           },
+          item_type: {
+            type: 'string',
+            enum: ['materiaux', 'meubles'],
+            description: 'Type d\'article: matériaux (peinture, carrelage...) ou meubles (table, chaise...)',
+          },
           supplier: {
             type: 'string',
             description: 'Nom du fournisseur',
@@ -579,12 +584,13 @@ async function addPurchaseFunc(args: Record<string, unknown>) {
     project_id: args.project_id as string,
     room_id: args.room_id as string | undefined,
     task_id: args.task_id as string | undefined,
-    name: args.item_name as string,
+    item_name: args.item_name as string,
     description: args.description as string | undefined,
     quantity: (args.quantity as number) || 1,
     unit_price: (args.unit_price as number) || 0,
     total_price: ((args.quantity as number) || 1) * ((args.unit_price as number) || 0),
     category: args.category as string | undefined,
+    item_type: (args.item_type as 'materiaux' | 'meubles') || 'materiaux',
     supplier: args.supplier as string | undefined,
     status: (args.status as 'planned' | 'in_cart' | 'purchased') || 'planned',
   });

@@ -55,6 +55,7 @@ export interface TaskMongo {
 }
 
 export type PurchaseStatus = 'planned' | 'in_cart' | 'purchased';
+export type PurchaseItemType = 'materiaux' | 'meubles';
 
 export interface PurchaseMongo {
   _id?: ObjectId;
@@ -67,6 +68,7 @@ export interface PurchaseMongo {
   unit_price: number;
   total_price: number;
   category?: string;
+  item_type: PurchaseItemType;
   supplier?: string;
   status: PurchaseStatus;
   purchase_date?: Date;
@@ -119,12 +121,13 @@ export interface Purchase {
   project_id: string;
   room_id?: string;
   task_id?: string;
-  name: string;
+  item_name: string;
   description?: string;
   quantity: number;
   unit_price: number;
   total_price: number;
   category?: string;
+  item_type: PurchaseItemType;
   supplier?: string;
   status: PurchaseStatus;
   purchase_date?: string;
@@ -143,6 +146,11 @@ export interface RoomWithTasks extends Room {
 
 export interface ProjectWithRooms extends Project {
   rooms: RoomWithTasks[];
+}
+
+export interface PurchaseWithDetails extends Purchase {
+  room_name?: string;
+  task_title?: string;
 }
 
 // Fonctions de conversion MongoDB → API
@@ -197,12 +205,13 @@ export function purchaseToApi(doc: PurchaseMongo): Purchase {
     project_id: doc.project_id.toString(),
     room_id: doc.room_id?.toString(),
     task_id: doc.task_id?.toString(),
-    name: doc.name,
+    item_name: doc.name,
     description: doc.description,
     quantity: doc.quantity,
     unit_price: doc.unit_price,
     total_price: doc.total_price,
     category: doc.category,
+    item_type: doc.item_type,
     supplier: doc.supplier,
     status: doc.status,
     purchase_date: doc.purchase_date?.toISOString(),

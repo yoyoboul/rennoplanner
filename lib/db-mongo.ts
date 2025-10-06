@@ -11,6 +11,7 @@ import type {
   Purchase,
   ProjectWithRooms,
   RoomWithTasks,
+  PurchaseWithDetails,
 } from './types-mongo';
 import {
   projectToApi,
@@ -282,13 +283,41 @@ export async function deleteTask(id: string): Promise<boolean> {
 
 // ==================== PURCHASES ====================
 
-export async function getPurchasesByProjectId(projectId: string): Promise<Purchase[]> {
+export async function getPurchasesByProjectId(projectId: string): Promise<PurchaseWithDetails[]> {
   const db = await getDatabase();
   const purchases = await db.collection<PurchaseMongo>('purchases')
     .find({ project_id: new ObjectId(projectId) })
     .toArray();
   
-  return purchases.map(purchaseToApi);
+  // Enrichir les achats avec les noms de pièces et de tâches
+  const purchasesWithDetails: PurchaseWithDetails[] = await Promise.all(
+    purchases.map(async (purchase) => {
+      const basePurchase = purchaseToApi(purchase);
+      const details: PurchaseWithDetails = { ...basePurchase };
+      
+      // Récupérer le nom de la pièce si présent
+      if (purchase.room_id) {
+        const room = await db.collection<RoomMongo>('rooms')
+          .findOne({ _id: purchase.room_id });
+        if (room) {
+          details.room_name = room.name;
+        }
+      }
+      
+      // Récupérer le titre de la tâche si présent
+      if (purchase.task_id) {
+        const task = await db.collection<TaskMongo>('tasks')
+          .findOne({ _id: purchase.task_id });
+        if (task) {
+          details.task_title = task.title;
+        }
+      }
+      
+      return details;
+    })
+  );
+  
+  return purchasesWithDetails;
 }
 
 export async function getPurchaseById(id: string): Promise<Purchase | null> {
@@ -307,12 +336,13 @@ export async function createPurchase(data: Partial<Purchase>): Promise<Purchase>
     project_id: new ObjectId(data.project_id!),
     room_id: data.room_id ? new ObjectId(data.room_id) : undefined,
     task_id: data.task_id ? new ObjectId(data.task_id) : undefined,
-    name: data.name!,
+    name: data.item_name!,
     description: data.description,
     quantity: data.quantity!,
     unit_price: data.unit_price!,
     total_price: data.total_price || (data.quantity! * data.unit_price!),
     category: data.category,
+    item_type: data.item_type || 'materiaux',
     supplier: data.supplier,
     status: data.status || 'planned',
     purchase_date: data.purchase_date ? new Date(data.purchase_date) : undefined,
@@ -336,6 +366,12 @@ export async function updatePurchase(
     ...data,
     updated_at: new Date(),
   };
+  
+  // Mapper item_name vers name pour MongoDB
+  if (data.item_name) {
+    updateData.name = data.item_name;
+    delete updateData.item_name;
+  }
   
   if (data.purchase_date) updateData.purchase_date = new Date(data.purchase_date);
   if (data.room_id) updateData.room_id = new ObjectId(data.room_id);

@@ -4,10 +4,59 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Send, Bot, User, Loader2, Sparkles, ArrowLeft } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, ArrowLeft, Mic, MicOff } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { INITIAL_ASSISTANT_MESSAGE } from '@/lib/ai-prompts';
 import { useStore } from '@/lib/store';
+
+// Types for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+  message: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: SpeechRecognitionErrorEvent) => void;
+  onend: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
 
 type Role = 'user' | 'assistant';
 
@@ -41,16 +90,103 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lastToolInfo, setLastToolInfo] = useState<{ calls?: string[]; results?: 'executed' | 'none' } | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Auto scroll on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, lastToolInfo]);
 
+  // Initialize speech recognition on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        setSpeechSupported(true);
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'fr-FR';
+        recognition.continuous = true; // Continue jusqu'à ce que l'utilisateur arrête
+        recognition.interimResults = true; // Affiche les résultats en temps réel
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            }
+          }
+
+          if (finalTranscript) {
+            setInput((prev) => {
+              const trimmedPrev = prev.trim();
+              return trimmedPrev ? trimmedPrev + ' ' + finalTranscript.trim() : finalTranscript.trim();
+            });
+          }
+        };
+
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.error('Speech recognition error:', event.error);
+          // Ne s'arrête que pour les erreurs graves
+          if (event.error === 'no-speech' || event.error === 'aborted') {
+            // Erreurs normales, on continue
+            return;
+          }
+          setIsListening(false);
+        };
+
+        recognition.onend = () => {
+          // Si l'utilisateur est toujours en mode écoute, on redémarre
+          // (certains navigateurs arrêtent après un certain temps)
+          if (isListening) {
+            try {
+              recognition.start();
+            } catch {
+              setIsListening(false);
+            }
+          }
+        };
+
+        recognitionRef.current = recognition;
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // Ignore errors when stopping recognition on unmount
+        }
+      }
+    };
+  }, [isListening]);
+
   // Helpers
   const canSend = useMemo(() => input.trim().length > 0 && !isLoading, [input, isLoading]);
+
+  // Speech recognition handlers
+  const toggleListening = () => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (error) {
+        console.error('Error starting speech recognition:', error);
+      }
+    }
+  };
 
   async function parseJsonSafe(res: Response) {
     try {
@@ -284,16 +420,52 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
           </div>
         )}
 
+        {/* Indicateur d'enregistrement vocal */}
+        {isListening && (
+          <div className="flex items-center justify-between px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <span className="text-sm text-red-700 font-medium">Écoute en cours...</span>
+            </div>
+            <span className="text-xs text-red-600">Cliquez sur 🎤 pour arrêter</span>
+          </div>
+        )}
+
         {/* Zone de saisie */}
         <div className="flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Posez une question..."
+            placeholder={isListening ? "Parlez maintenant..." : "Posez une question..."}
             disabled={isLoading}
             className="flex-1 h-12 text-base"
           />
+          {/* Bouton micro pour speech-to-text */}
+          {speechSupported && (
+            <Button
+              type="button"
+              variant={isListening ? 'default' : 'outline'}
+              onClick={toggleListening}
+              disabled={isLoading}
+              className={`h-12 min-w-[48px] px-3 transition-all ${
+                isListening 
+                  ? 'bg-red-600 hover:bg-red-700 text-white animate-pulse' 
+                  : ''
+              }`}
+              title={isListening ? 'Arrêter l\'enregistrement' : 'Activer la saisie vocale'}
+            >
+              {isListening ? (
+                <MicOff className="w-5 h-5" />
+              ) : (
+                <Mic className="w-5 h-5" />
+              )}
+            </Button>
+          )}
           <Button 
             onClick={sendMessage} 
             disabled={!canSend} 

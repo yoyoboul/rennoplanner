@@ -36,6 +36,7 @@ export async function buildProjectContext(projectId: string): Promise<string> {
 # CONTEXTE DU PROJET
 
 ## Informations Générales
+- **ID du projet**: ${projectId}
 - **Nom**: ${projectData.name}
 - **Description**: ${projectData.description || 'Aucune description'}
 - **Date de création**: ${new Date(projectData.created_at).toLocaleDateString('fr-FR')}

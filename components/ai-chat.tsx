@@ -109,22 +109,48 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
         setSpeechSupported(true);
         const recognition = new SpeechRecognition();
         recognition.lang = 'fr-FR';
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true; // Continue jusqu'à ce que l'utilisateur arrête
+        recognition.interimResults = true; // Affiche les résultats en temps réel
         recognition.maxAlternatives = 1;
 
         recognition.onresult = (event: SpeechRecognitionEvent) => {
-          const transcript = event.results[0][0].transcript;
-          setInput((prev) => prev + (prev ? ' ' : '') + transcript);
+          let finalTranscript = '';
+
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            }
+          }
+
+          if (finalTranscript) {
+            setInput((prev) => {
+              const trimmedPrev = prev.trim();
+              return trimmedPrev ? trimmedPrev + ' ' + finalTranscript.trim() : finalTranscript.trim();
+            });
+          }
         };
 
         recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error('Speech recognition error:', event.error);
+          // Ne s'arrête que pour les erreurs graves
+          if (event.error === 'no-speech' || event.error === 'aborted') {
+            // Erreurs normales, on continue
+            return;
+          }
           setIsListening(false);
         };
 
         recognition.onend = () => {
-          setIsListening(false);
+          // Si l'utilisateur est toujours en mode écoute, on redémarre
+          // (certains navigateurs arrêtent après un certain temps)
+          if (isListening) {
+            try {
+              recognition.start();
+            } catch {
+              setIsListening(false);
+            }
+          }
         };
 
         recognitionRef.current = recognition;
@@ -140,7 +166,7 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
         }
       }
     };
-  }, []);
+  }, [isListening]);
 
   // Helpers
   const canSend = useMemo(() => input.trim().length > 0 && !isLoading, [input, isLoading]);
@@ -396,13 +422,16 @@ export function AIChat({ projectId, onBack }: AIChatProps) {
 
         {/* Indicateur d'enregistrement vocal */}
         {isListening && (
-          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex gap-1">
-              <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '300ms' }}></div>
+          <div className="flex items-center justify-between px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-1 h-4 bg-red-600 rounded animate-pulse" style={{ animationDelay: '300ms' }}></div>
+              </div>
+              <span className="text-sm text-red-700 font-medium">Écoute en cours...</span>
             </div>
-            <span className="text-sm text-red-700 font-medium">Écoute en cours...</span>
+            <span className="text-xs text-red-600">Cliquez sur 🎤 pour arrêter</span>
           </div>
         )}
 

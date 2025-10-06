@@ -85,7 +85,7 @@ export function KPICards({ project, purchases }: KPICardsProps) {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Budget Utilisé</p>
               <div className="mt-2">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-gray-900">
                   {stats.budget.percent.toFixed(0)}%
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -117,7 +117,7 @@ export function KPICards({ project, purchases }: KPICardsProps) {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Tâches Complétées</p>
               <div className="mt-2">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-gray-900">
                   {stats.tasks.completed}/{stats.tasks.total}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -146,7 +146,7 @@ export function KPICards({ project, purchases }: KPICardsProps) {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Achats Effectués</p>
               <div className="mt-2">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-gray-900">
                   {stats.purchases.purchased}/{stats.purchases.total}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -175,7 +175,7 @@ export function KPICards({ project, purchases }: KPICardsProps) {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-600">Progression Globale</p>
               <div className="mt-2">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-3xl font-bold text-gray-900">
                   {stats.progress.percent.toFixed(0)}%
                 </p>
                 <p className="text-xs text-gray-500 mt-1">

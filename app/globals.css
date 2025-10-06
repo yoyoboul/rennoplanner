@@ -96,19 +96,35 @@ html {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 20px;
+    width: 40px;
     pointer-events: none;
     z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 
-  .tab-scroll-container::before {
+  /* Gradient gauche (visible si on peut scroller à gauche) */
+  .tab-scroll-container.has-scroll-left::before {
     left: 0;
-    background: linear-gradient(to right, rgba(249, 250, 251, 0.8), transparent);
+    background: linear-gradient(to right, white, transparent);
+    opacity: 1;
   }
 
-  .tab-scroll-container::after {
+  /* Gradient droit (visible si on peut scroller à droite) */
+  .tab-scroll-container.has-scroll-right::after {
     right: 0;
-    background: linear-gradient(to left, rgba(249, 250, 251, 0.8), transparent);
+    background: linear-gradient(to left, white, transparent);
+    opacity: 1;
+  }
+
+  /* Cacher la scrollbar horizontale partout */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }
 

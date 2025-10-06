@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +33,8 @@ import {
   MessageSquare,
   ChevronDown,
   Sparkles,
-  ListChecks
+  ListChecks,
+  MoreHorizontal
 } from 'lucide-react';
 import Link from 'next/link';
 import type { TaskCategory, TaskPriority } from '@/lib/types';
@@ -62,10 +63,39 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
     end_date: '',
   });
 
+  // Ref pour le container des tabs
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollState, setScrollState] = useState({ left: false, right: false });
+
   useEffect(() => {
     fetchProject(projectId);
     fetchPurchases(projectId);
   }, [projectId, fetchProject, fetchPurchases]);
+
+  // Gérer les indicateurs de scroll pour les tabs
+  useEffect(() => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setScrollState({
+        left: scrollLeft > 10,
+        right: scrollLeft < scrollWidth - clientWidth - 10,
+      });
+    };
+
+    // Check initial
+    handleScroll();
+
+    container.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []);
 
   const handleAddRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -443,8 +473,12 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
         {/* Navigation Tabs */}
         <Tabs value={view} onValueChange={(value) => setView(value as typeof view)}>
-          <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 tab-scroll-container">
-            <TabsList className="w-full sm:w-auto inline-flex justify-start min-w-max sm:min-w-0">
+          <div 
+            ref={tabsContainerRef}
+            className={`w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 tab-scroll-container ${scrollState.left ? 'has-scroll-left' : ''} ${scrollState.right ? 'has-scroll-right' : ''}`}
+          >
+            <TabsList className="w-full sm:w-auto inline-flex justify-start min-w-max sm:min-w-0 gap-1">
+              {/* Tabs principaux - Toujours visibles */}
               <TabsTrigger value="overview" className="gap-2">
                 <LayoutGrid className="w-5 h-5 flex-shrink-0" />
                 <span className="hidden sm:inline">Vue d&apos;ensemble</span>
@@ -462,21 +496,61 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
                 <Calendar className="w-5 h-5 flex-shrink-0" />
                 <span>Timeline</span>
               </TabsTrigger>
-              <TabsTrigger value="calendar" className="gap-2">
+
+              {/* Desktop: Tous les tabs visibles */}
+              <TabsTrigger value="calendar" className="gap-2 hidden md:inline-flex">
                 <Calendar className="w-5 h-5 flex-shrink-0" />
-                <span className="hidden sm:inline">Calendrier</span>
-                <span className="sm:hidden">Cal.</span>
+                <span>Calendrier</span>
               </TabsTrigger>
-              <TabsTrigger value="shopping" className="gap-2">
+              <TabsTrigger value="shopping" className="gap-2 hidden md:inline-flex">
                 <ShoppingBag className="w-5 h-5 flex-shrink-0" />
-                <span className="hidden sm:inline">Liste de Courses</span>
-                <span className="sm:hidden">Courses</span>
+                <span>Liste de Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="chat" className="gap-2">
+              <TabsTrigger value="chat" className="gap-2 hidden md:inline-flex">
                 <MessageSquare className="w-5 h-5 flex-shrink-0" />
-                <span className="hidden sm:inline">Assistant IA</span>
-                <span className="sm:hidden">IA</span>
+                <span>Assistant IA</span>
               </TabsTrigger>
+
+              {/* Mobile: Menu "Plus" pour tabs secondaires */}
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={`inline-flex items-center justify-center px-3 py-2.5 rounded-md text-sm font-medium min-h-[40px] min-w-[60px] transition-all ${
+                        view === 'calendar' || view === 'shopping' || view === 'chat'
+                          ? 'bg-white text-gray-900 shadow-md font-semibold'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <MoreHorizontal className="w-5 h-5" />
+                      <span className="ml-1 text-sm">Plus</span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem 
+                      onClick={() => setView('calendar')}
+                      className="py-3 px-4 text-base cursor-pointer"
+                    >
+                      <Calendar className="w-5 h-5 mr-3" />
+                      Calendrier
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setView('shopping')}
+                      className="py-3 px-4 text-base cursor-pointer"
+                    >
+                      <ShoppingBag className="w-5 h-5 mr-3" />
+                      Liste de Courses
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => setView('chat')}
+                      className="py-3 px-4 text-base cursor-pointer"
+                    >
+                      <MessageSquare className="w-5 h-5 mr-3" />
+                      Assistant IA
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </TabsList>
           </div>
 

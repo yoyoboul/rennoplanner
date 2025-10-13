@@ -64,7 +64,7 @@ export async function GET(
         },
       };
 
-      const pdfStream = await renderToStream(<ShoppingListPDF data={data} />);
+      const pdfStream = await renderToStream(ShoppingListPDF({ data }));
       const chunks: Uint8Array[] = [];
 
       for await (const chunk of pdfStream) {
@@ -133,7 +133,7 @@ export async function GET(
         },
       };
 
-      const pdfStream = await renderToStream(<ProjectReportPDF data={data} />);
+      const pdfStream = await renderToStream(ProjectReportPDF({ data }));
       const chunks: Uint8Array[] = [];
 
       for await (const chunk of pdfStream) {

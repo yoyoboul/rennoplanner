@@ -113,7 +113,7 @@ export function KanbanBoard({ tasks }: KanbanBoardProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedTaskId, selectedColumn, tasks, updateTask]);
+  }, [selectedTaskId, selectedColumn, tasks, updateTask, getTasksByStatus]);
 
   // Empty state
   if (tasks.length === 0) {

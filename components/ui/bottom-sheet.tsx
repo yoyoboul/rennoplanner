@@ -39,7 +39,7 @@ export function BottomSheet({
     }
 
     // Otherwise snap to nearest point
-    const windowHeight = window.innerHeight;
+    // const windowHeight = window.innerHeight;
     // const currentHeight = windowHeight * snapPoints[currentSnapPoint];
     const nextSnapPointIndex = offset < -50 ? Math.min(currentSnapPoint + 1, snapPoints.length - 1) : Math.max(currentSnapPoint - 1, 0);
     

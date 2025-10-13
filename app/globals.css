@@ -1,0 +1,202 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ========================================
+   🎯 OPTIMISATIONS MOBILE
+   ======================================== */
+
+/* Améliorer le scroll sur mobile */
+html {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Désactiver le zoom sur les inputs (iOS) */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Améliorer les zones tactiles (minimum 44x44px recommandé par Apple) */
+@media (max-width: 768px) {
+  button, 
+  a[role="button"],
+  [role="tab"],
+  [role="menuitem"] {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0.75rem;
+  }
+
+  /* Padding plus large sur mobile pour meilleure UX */
+  .max-w-7xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Titres plus petits sur mobile */
+  h1 {
+    font-size: 1.875rem !important; /* 30px au lieu de 36px */
+  }
+
+  /* Meilleur espacement des cartes */
+  .grid {
+    gap: 1rem !important;
+  }
+
+  /* Tab bar qui scroll horizontalement sur mobile */
+  [role="tablist"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0 16px;
+  }
+
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Tabs individuels */
+  [role="tab"] {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+
+  /* Container de tabs avec indicateurs de scroll */
+  .tab-scroll-container {
+    position: relative;
+  }
+
+  /* Indicateur visuel "il y a plus de contenu" sur les bords */
+  .tab-scroll-container::before,
+  .tab-scroll-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .tab-scroll-container::before {
+    left: 0;
+    background: linear-gradient(to right, rgba(249, 250, 251, 0.8), transparent);
+  }
+
+  .tab-scroll-container::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(249, 250, 251, 0.8), transparent);
+  }
+}
+
+/* Optimiser les animations pour mobile */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Améliorer la lisibilité du texte */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Éviter que les contenus débordent sur petits écrans */
+* {
+  max-width: 100%;
+}
+
+img, video {
+  height: auto;
+}
+
+/* Améliorer l'affordance des boutons sur mobile */
+@media (hover: none) and (pointer: coarse) {
+  button:active,
+  a:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+}
+
+/* Safe area pour les notchs (iPhone X+) */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Prévenir le pull-to-refresh sur iOS */
+body {
+  overscroll-behavior-y: contain;
+}
+
+/* Safe area pour le bottom (notch, barre de navigation) */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Safe area pour le top (status bar, notch) */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Optimisation des menus déroulants (DropdownMenu) sur mobile */
+@media (max-width: 768px) {
+  /* Items de menu plus grands et espacés */
+  [role="menuitem"] {
+    min-height: 48px !important;
+    padding: 12px 16px !important;
+    font-size: 16px !important;
+  }
+
+  /* Icônes plus grandes dans les menus */
+  [role="menuitem"] svg {
+    width: 20px !important;
+    height: 20px !important;
+    margin-right: 12px !important;
+  }
+
+  /* Menu déroulant plus large sur mobile */
+  [role="menu"] {
+    min-width: 220px !important;
+  }
+
+  /* Améliorer la visibilité du hover/active sur mobile */
+  [role="menuitem"]:active {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    transform: scale(0.98);
+  }
+}

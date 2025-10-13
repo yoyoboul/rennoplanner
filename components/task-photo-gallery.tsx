@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Camera, X, Upload, Loader2, ImagePlus, Edit2, Trash2 } from 'lucide-react';
+import { Camera, Loader2, ImagePlus, Edit2, Trash2 } from 'lucide-react';
 import Lightbox from 'yet-another-react-lightbox';
 import 'yet-another-react-lightbox/styles.css';
 import { Button } from './ui/button';
@@ -10,10 +10,10 @@ import {
   uploadPhoto,
   validateImageFile,
   compressImage,
-  formatFileSize,
   type PhotoMetadata,
 } from '@/lib/file-storage';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 interface TaskPhotoGalleryProps {
   taskId: string;
@@ -66,8 +66,6 @@ export function TaskPhotoGallery({
         if (!response.ok) {
           throw new Error('Failed to upload photo');
         }
-
-        const data = await response.json();
 
         // Update local state
         if (onPhotosChange) {
@@ -200,10 +198,11 @@ export function TaskPhotoGallery({
                 className="relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer"
                 onClick={() => setLightboxIndex(index)}
               >
-                <img
+                <Image
                   src={photo.url}
                   alt={photo.caption || `Photo ${index + 1}`}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                  fill
+                  className="object-cover transition-transform group-hover:scale-110"
                 />
 
                 {/* Overlay with actions */}

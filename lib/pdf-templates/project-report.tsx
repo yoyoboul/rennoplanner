@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
 // Styles for PDF
 const styles = StyleSheet.create({
@@ -200,7 +200,7 @@ export function ProjectReportPDF({ data }: { data: ProjectReportData }) {
             <Text style={styles.value}>{data.stats.total_tasks}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Taux d'avancement:</Text>
+            <Text style={styles.label}>Taux d&apos;avancement:</Text>
             <Text style={styles.value}>{data.stats.completion_rate.toFixed(1)}%</Text>
           </View>
         </View>

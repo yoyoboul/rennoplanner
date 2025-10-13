@@ -168,7 +168,16 @@ export function ShoppingListPDF({ data }: { data: ShoppingListData }) {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
 
-  const renderItems = (items: Array<any>, title: string, icon: string) => {
+  type ShoppingItem = {
+    item_name: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    status: string;
+    category?: string;
+  };
+
+  const renderItems = (items: Array<ShoppingItem>, title: string, icon: string) => {
     if (items.length === 0) return null;
 
     return (

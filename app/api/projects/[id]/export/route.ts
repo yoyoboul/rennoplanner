@@ -98,7 +98,7 @@ export async function GET(
           name: project.name,
           description: project.description,
           total_budget: project.total_budget || 0,
-          created_at: project.created_at.toISOString(),
+          created_at: project.created_at,
         },
         rooms: project.rooms.map((room) => ({
           id: room.id,

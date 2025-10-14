@@ -20,7 +20,7 @@ export function Tooltip({
   className,
 }: TooltipProps) {
   const [isOpen, setIsOpen] = React.useState(false);
-  const timeoutRef = React.useRef<NodeJS.Timeout>();
+  const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
   const triggerRef = React.useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = () => {

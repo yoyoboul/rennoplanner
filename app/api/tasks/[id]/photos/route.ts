@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { getTasksCollection, getRoomsCollection, getProjectsCollection } from '@/lib/db-mongo';
+import { getTaskById, updateTask } from '@/lib/db-mongo';
 import { withErrorHandling } from '@/lib/errors';
 import type { PhotoMetadata } from '@/lib/types-mongo';
 
@@ -16,8 +16,7 @@ export async function GET(
       throw new Error('Invalid task ID');
     }
 
-    const tasksCollection = await getTasksCollection();
-    const task = await tasksCollection.findOne({ _id: new ObjectId(id) });
+    const task = await getTaskById(id);
 
     if (!task) {
       throw new Error('Task not found');
@@ -46,28 +45,27 @@ export async function POST(
       throw new Error('Invalid photo data');
     }
 
-    const tasksCollection = await getTasksCollection();
+    // Get current task
+    const currentTask = await getTaskById(id);
     
-    // Add photo to task's photos array
-    const result = await tasksCollection.updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $push: { photos: photo },
-        $set: { updated_at: new Date() },
-      }
-    );
-
-    if (result.matchedCount === 0) {
+    if (!currentTask) {
       throw new Error('Task not found');
     }
 
-    // Get updated task
-    const updatedTask = await tasksCollection.findOne({ _id: new ObjectId(id) });
+    // Add photo to existing photos array
+    const updatedPhotos = [...(currentTask.photos || []), photo];
+    
+    // Update task with new photos array
+    const updatedTask = await updateTask(id, { photos: updatedPhotos });
+
+    if (!updatedTask) {
+      throw new Error('Failed to update task');
+    }
 
     return {
       success: true,
       photo,
-      total_photos: updatedTask?.photos?.length || 0,
+      total_photos: updatedTask.photos?.length || 0,
     };
   });
 }
@@ -90,19 +88,21 @@ export async function DELETE(
       throw new Error('Photo ID is required');
     }
 
-    const tasksCollection = await getTasksCollection();
-
-    // Remove photo from task's photos array
-    const result = await tasksCollection.updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $pull: { photos: { id: photoId } },
-        $set: { updated_at: new Date() },
-      }
-    );
-
-    if (result.matchedCount === 0) {
+    // Get current task
+    const currentTask = await getTaskById(id);
+    
+    if (!currentTask) {
       throw new Error('Task not found');
+    }
+
+    // Remove photo from photos array
+    const updatedPhotos = (currentTask.photos || []).filter(photo => photo.id !== photoId);
+    
+    // Update task with filtered photos array
+    const updatedTask = await updateTask(id, { photos: updatedPhotos });
+
+    if (!updatedTask) {
+      throw new Error('Failed to update task');
     }
 
     return {
@@ -130,21 +130,23 @@ export async function PATCH(
       throw new Error('Photo ID is required');
     }
 
-    const tasksCollection = await getTasksCollection();
+    // Get current task
+    const currentTask = await getTaskById(id);
+    
+    if (!currentTask) {
+      throw new Error('Task not found');
+    }
 
-    // Update photo caption
-    const result = await tasksCollection.updateOne(
-      { _id: new ObjectId(id), 'photos.id': photoId },
-      {
-        $set: {
-          'photos.$.caption': caption,
-          updated_at: new Date(),
-        },
-      }
+    // Update photo caption in photos array
+    const updatedPhotos = (currentTask.photos || []).map(photo => 
+      photo.id === photoId ? { ...photo, caption } : photo
     );
+    
+    // Update task with modified photos array
+    const updatedTask = await updateTask(id, { photos: updatedPhotos });
 
-    if (result.matchedCount === 0) {
-      throw new Error('Task or photo not found');
+    if (!updatedTask) {
+      throw new Error('Failed to update task');
     }
 
     return {

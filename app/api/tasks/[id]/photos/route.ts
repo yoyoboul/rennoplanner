@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { getTasksCollection, getRoomsCollection, getProjectsCollection } from '@/lib/mongodb';
+import { getTasksCollection, getRoomsCollection, getProjectsCollection } from '@/lib/db-mongo';
 import { withErrorHandling } from '@/lib/errors';
 import type { PhotoMetadata } from '@/lib/types-mongo';
 

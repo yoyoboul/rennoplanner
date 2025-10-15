@@ -6,7 +6,7 @@ import {
 } from '@/lib/db-mongo';
 import { updateShoppingSessionSchema } from '@/lib/validations-api';
 import { withErrorHandling, logInfo, assertExists } from '@/lib/errors';
-import { apiRateLimiter, updateRateLimiter, getClientIdentifier, checkRateLimit } from '@/lib/rate-limiter';
+import { apiRateLimiter, getClientIdentifier, checkRateLimit } from '@/lib/rate-limiter';
 
 export async function GET(
   request: Request,
@@ -32,7 +32,7 @@ export async function PATCH(
 ) {
   return withErrorHandling(async () => {
     const clientId = getClientIdentifier(request);
-    checkRateLimit(updateRateLimiter, clientId, 'Limite de modification atteinte');
+    checkRateLimit(apiRateLimiter, clientId);
 
     const { id } = await params;
     const body = await request.json();

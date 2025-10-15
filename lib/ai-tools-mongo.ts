@@ -881,10 +881,10 @@ async function createShoppingSessionFunc(args: Record<string, unknown>) {
 }
 
 async function addItemToShoppingSessionFunc(args: Record<string, unknown>) {
-  const { session_id, ...purchaseData } = args;
+  const session_id = args.session_id as string;
   
   // Récupérer la session pour obtenir le project_id
-  const session = await import('./db-mongo').then(m => m.getShoppingSessionById(session_id as string));
+  const session = await import('./db-mongo').then(m => m.getShoppingSessionById(session_id));
   
   if (!session) {
     throw new Error('Session de courses introuvable');
@@ -892,7 +892,7 @@ async function addItemToShoppingSessionFunc(args: Record<string, unknown>) {
   
   const purchase = await createPurchase({
     project_id: session.project_id,
-    shopping_session_id: session_id as string,
+    shopping_session_id: session_id,
     item_name: args.item_name as string,
     description: args.description as string | undefined,
     quantity: args.quantity as number ?? 1,

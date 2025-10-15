@@ -167,251 +167,182 @@ export function ShoppingList({ project }: ShoppingListProps) {
 
   const grandTotal = totals.planned + totals.in_cart + totals.purchased;
 
-  const renderPurchaseCard = (purchase: PurchaseWithDetails) => {
-    const isPurchased = purchase.status === 'purchased';
-    const isInCart = purchase.status === 'in_cart';
-    
-    return (
-      <div
-        key={purchase.id}
-        className={`group relative flex items-start gap-3 p-4 rounded-lg border transition-all hover:shadow-md ${
-          isPurchased
-            ? 'bg-gray-50 border-gray-200'
-            : isInCart
-            ? 'bg-orange-50 border-orange-200'
-            : 'bg-white border-gray-200 hover:border-blue-300'
-        }`}
-      >
-        {/* Checkbox */}
-        <div className="flex items-center pt-1">
-          <button
-            onClick={() => {
-              if (isPurchased) {
-                handleStatusChange(purchase.id, 'in_cart');
-              } else if (isInCart) {
-                handleStatusChange(purchase.id, 'purchased');
-              } else {
-                handleStatusChange(purchase.id, 'in_cart');
-              }
-            }}
-            className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all ${
-              isPurchased
-                ? 'bg-green-500 border-green-500'
-                : isInCart
-                ? 'bg-orange-400 border-orange-400'
-                : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-            }`}
-          >
-            {isPurchased && <Check className="w-4 h-4 text-white" />}
-            {isInCart && <ShoppingCart className="w-4 h-4 text-white" />}
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                {purchase.item_type === 'meubles' ? (
-                  <Package className="w-4 h-4 text-purple-600 flex-shrink-0" />
-                ) : (
-                  <div className="w-4 h-4 rounded bg-blue-100 flex-shrink-0" />
+  const renderPurchaseCard = (purchase: PurchaseWithDetails) => (
+    <Card key={purchase.id} className="border-l-4 border-l-blue-500">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-lg">{purchase.item_name}</h4>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    purchase.item_type === 'meubles' 
+                      ? 'bg-purple-100 text-purple-700' 
+                      : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {purchase.item_type === 'meubles' ? '🪑 Meubles' : '🧱 Matériaux'}
+                  </span>
+                </div>
+                {purchase.description && (
+                  <p className="text-sm text-gray-600 mt-1">{purchase.description}</p>
                 )}
-                <h4
-                  className={`font-medium ${
-                    isPurchased ? 'line-through text-gray-500' : 'text-gray-900'
-                  }`}
-                >
-                  {purchase.item_name}
-                </h4>
               </div>
-
-              {purchase.description && (
-                <p
-                  className={`text-sm mt-1 ${
-                    isPurchased ? 'text-gray-400' : 'text-gray-600'
-                  }`}
-                >
-                  {purchase.description}
+              <div className="text-right">
+                <p className="text-lg font-bold text-blue-600">
+                  {formatCurrency(purchase.total_price)}
                 </p>
-              )}
-
-              <div className="flex flex-wrap gap-2 mt-2">
-                {purchase.quantity > 1 && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">
-                    {purchase.quantity} × {formatCurrency(purchase.unit_price)}
-                  </span>
-                )}
-                {purchase.category && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
-                    {purchase.category}
-                  </span>
-                )}
-                {purchase.supplier && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
-                    🏪 {purchase.supplier}
-                  </span>
-                )}
-                {purchase.room_name && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-indigo-100 text-indigo-700">
-                    📍 {purchase.room_name}
-                  </span>
-                )}
+                <p className="text-xs text-gray-500">
+                  {purchase.quantity} × {formatCurrency(purchase.unit_price)}
+                </p>
               </div>
+            </div>
 
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-3">
+              {purchase.category && (
+                <div>
+                  <span className="font-medium">Catégorie:</span> {purchase.category}
+                </div>
+              )}
+              {purchase.supplier && (
+                <div>
+                  <span className="font-medium">Fournisseur:</span> {purchase.supplier}
+                </div>
+              )}
+              {purchase.room_name && (
+                <div>
+                  <span className="font-medium">Pièce:</span> {purchase.room_name}
+                </div>
+              )}
+              {purchase.task_title && (
+                <div>
+                  <span className="font-medium">Tâche:</span> {purchase.task_title}
+                </div>
+              )}
               {purchase.shopping_session_date && (
-                <div className="mt-2 text-xs text-blue-600 font-medium">
-                  📅 {formatDate(purchase.shopping_session_date)}
+                <div className="col-span-2">
+                  <span className="font-medium text-blue-600">📅 Session:</span>{' '}
+                  {formatDate(purchase.shopping_session_date)}
                   {purchase.shopping_session_name && ` - ${purchase.shopping_session_name}`}
                 </div>
               )}
-
-              {purchase.notes && (
-                <p className="text-xs text-gray-500 mt-2 italic">💬 {purchase.notes}</p>
+              {purchase.purchase_date && (
+                <div>
+                  <span className="font-medium">Date d&apos;achat:</span>{' '}
+                  {formatDate(purchase.purchase_date)}
+                </div>
               )}
             </div>
 
-            {/* Price */}
-            <div className="text-right flex-shrink-0">
-              <div
-                className={`text-lg font-bold ${
-                  isPurchased ? 'text-gray-400' : 'text-gray-900'
-                }`}
+            {purchase.notes && (
+              <p className="text-xs text-gray-500 mt-2 italic">📝 {purchase.notes}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {purchase.status === 'planned' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleStatusChange(purchase.id, 'in_cart')}
+                className="gap-1"
               >
-                {formatCurrency(purchase.total_price)}
-              </div>
-            </div>
+                <ShoppingCart className="w-3 h-3" />
+                Panier
+              </Button>
+            )}
+            {purchase.status === 'in_cart' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleStatusChange(purchase.id, 'purchased')}
+                  className="gap-1 bg-green-50 hover:bg-green-100"
+                >
+                  <Check className="w-3 h-3" />
+                  Acheté
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleStatusChange(purchase.id, 'planned')}
+                  className="gap-1"
+                >
+                  Retirer
+                </Button>
+              </>
+            )}
+            {purchase.status === 'purchased' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleStatusChange(purchase.id, 'in_cart')}
+                className="gap-1"
+              >
+                Annuler
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => handleEdit(purchase)}>
+              <Edit2 className="w-3 h-3" />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                confirm({
+                  title: 'Supprimer cet achat ?',
+                  description: `Voulez-vous vraiment supprimer "${purchase.item_name}" ? Cette action est irréversible.`,
+                  variant: 'danger',
+                  confirmText: 'Supprimer',
+                  onConfirm: () => deletePurchase(purchase.id),
+                });
+              }}
+              className="text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
           </div>
         </div>
-
-        {/* Actions (visible on hover) */}
-        <div className="flex-shrink-0 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => handleEdit(purchase)}
-            className="h-8 w-8 p-0"
-          >
-            <Edit2 className="w-3 h-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              confirm({
-                title: 'Supprimer cet achat ?',
-                description: `Voulez-vous vraiment supprimer "${purchase.item_name}" ? Cette action est irréversible.`,
-                variant: 'danger',
-                confirmText: 'Supprimer',
-                onConfirm: () => deletePurchase(purchase.id),
-              });
-            }}
-            className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
-      </div>
-    );
-  };
+      </CardContent>
+    </Card>
+  );
 
   return (
     <>
       {dialog}
       <div className="space-y-6">
       {/* Header with Stats */}
-      <Card className="bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 border-blue-200">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Liste de Courses</h3>
-              <p className="text-sm text-gray-600">
-                {groupedPurchases.purchased.length} / {purchases.length} articles achetés
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(grandTotal)}</p>
-              <p className="text-xs text-gray-600">Total estimé</p>
-            </div>
-          </div>
-          
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs text-gray-600">
-              <span>Progression des achats</span>
-              <span>{purchases.length > 0 ? Math.round((groupedPurchases.purchased.length / purchases.length) * 100) : 0}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div className="h-full flex">
-                <div
-                  className="bg-green-500 transition-all duration-500"
-                  style={{ width: `${purchases.length > 0 ? (groupedPurchases.purchased.length / purchases.length) * 100 : 0}%` }}
-                />
-                <div
-                  className="bg-orange-400 transition-all duration-500"
-                  style={{ width: `${purchases.length > 0 ? (groupedPurchases.in_cart.length / purchases.length) * 100 : 0}%` }}
-                />
-              </div>
-            </div>
-            <div className="flex gap-4 text-xs">
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span>{groupedPurchases.purchased.length} acheté{groupedPurchases.purchased.length > 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full bg-orange-400"></div>
-                <span>{groupedPurchases.in_cart.length} dans le panier</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-3 h-3 rounded-full bg-gray-300"></div>
-                <span>{groupedPurchases.planned.length} à planifier</span>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100">
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                <ListChecks className="w-5 h-5 text-gray-600" />
-              </div>
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-gray-600">À planifier</p>
-                <p className="text-lg font-semibold">{formatCurrency(totals.planned)}</p>
-                <p className="text-xs text-gray-500">{groupedPurchases.planned.length} article{groupedPurchases.planned.length > 1 ? 's' : ''}</p>
+                <p className="text-sm text-gray-600">Total Estimé</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrency(grandTotal)}</p>
               </div>
+              <Package className="w-8 h-8 text-blue-600 opacity-50" />
             </div>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow border-orange-200">
+        <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <ShoppingCart className="w-5 h-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Dans le panier</p>
-                <p className="text-lg font-semibold text-orange-600">{formatCurrency(totals.in_cart)}</p>
-                <p className="text-xs text-gray-500">{groupedPurchases.in_cart.length} article{groupedPurchases.in_cart.length > 1 ? 's' : ''}</p>
-              </div>
-            </div>
+            <p className="text-xs text-gray-600">À planifier</p>
+            <p className="text-lg font-semibold">{formatCurrency(totals.planned)}</p>
+            <p className="text-xs text-gray-500">{groupedPurchases.planned.length} articles</p>
           </CardContent>
         </Card>
-        <Card className="hover:shadow-md transition-shadow border-green-200">
+        <Card>
           <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Check className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-600">Acheté</p>
-                <p className="text-lg font-semibold text-green-600">{formatCurrency(totals.purchased)}</p>
-                <p className="text-xs text-gray-500">{groupedPurchases.purchased.length} article{groupedPurchases.purchased.length > 1 ? 's' : ''}</p>
-              </div>
-            </div>
+            <p className="text-xs text-gray-600">Dans le panier</p>
+            <p className="text-lg font-semibold text-orange-600">{formatCurrency(totals.in_cart)}</p>
+            <p className="text-xs text-gray-500">{groupedPurchases.in_cart.length} articles</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-xs text-gray-600">Acheté</p>
+            <p className="text-lg font-semibold text-green-600">{formatCurrency(totals.purchased)}</p>
+            <p className="text-xs text-gray-500">{groupedPurchases.purchased.length} articles</p>
           </CardContent>
         </Card>
       </div>

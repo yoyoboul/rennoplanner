@@ -217,6 +217,11 @@ export function ShoppingSessionsList({ project }: ShoppingSessionsListProps) {
     );
   };
 
+  const handleTogglePurchaseStatus = async (purchaseId: string | number, currentStatus: string) => {
+    const newStatus = currentStatus === 'purchased' ? 'planned' : 'purchased';
+    await updatePurchase(purchaseId, { status: newStatus });
+  };
+
   const renderSessionPurchases = (session: SessionWithStats) => {
     const sessionPurchases = purchases.filter(p => p.shopping_session_id === session.id);
     
@@ -237,41 +242,97 @@ export function ShoppingSessionsList({ project }: ShoppingSessionsListProps) {
     }, {} as Record<string, typeof sessionPurchases>);
     
     return (
-      <div className="space-y-3">
-        {Object.entries(bySupplier).map(([supplier, items]) => (
-          <div key={supplier} className="border rounded-lg p-3">
-            <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
-              <ShoppingCart className="w-4 h-4 text-gray-500" />
-              {supplier}
-              <span className="text-xs text-gray-500">
-                ({items.length} article{items.length > 1 ? 's' : ''})
-              </span>
-            </h4>
-            <div className="space-y-2">
-              {items.map(item => (
-                <div 
-                  key={item.id} 
-                  className="flex items-center justify-between text-sm border-l-2 pl-2"
-                  style={{ 
-                    borderColor: item.status === 'purchased' ? '#10b981' : '#e5e7eb' 
-                  }}
-                >
-                  <div className="flex-1">
-                    <span className={item.status === 'purchased' ? 'line-through text-gray-500' : ''}>
-                      {item.item_name}
-                    </span>
-                    {item.quantity > 1 && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        (×{item.quantity})
-                      </span>
-                    )}
+      <div className="space-y-4">
+        {Object.entries(bySupplier).map(([supplier, items]) => {
+          const totalSupplier = items.reduce((sum, item) => sum + item.total_price, 0);
+          const purchasedCount = items.filter(i => i.status === 'purchased').length;
+          
+          return (
+            <div key={supplier} className="border rounded-lg p-4 bg-white shadow-sm">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b">
+                <h4 className="font-semibold text-base flex items-center gap-2">
+                  <ShoppingCart className="w-5 h-5 text-blue-600" />
+                  {supplier}
+                </h4>
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">
+                    {purchasedCount}/{items.length} article{items.length > 1 ? 's' : ''}
                   </div>
-                  <span className="font-medium">{formatCurrency(item.total_price)}</span>
+                  <div className="font-semibold text-blue-600">
+                    {formatCurrency(totalSupplier)}
+                  </div>
                 </div>
-              ))}
+              </div>
+              
+              <div className="space-y-1">
+                {items.map(item => (
+                  <label 
+                    key={item.id}
+                    className={`flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
+                      item.status === 'purchased' ? 'bg-green-50' : ''
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.status === 'purchased'}
+                      onChange={() => handleTogglePurchaseStatus(item.id, item.status)}
+                      className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                    />
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <span className={`font-medium ${
+                          item.status === 'purchased' 
+                            ? 'line-through text-gray-500' 
+                            : 'text-gray-900'
+                        }`}>
+                          {item.item_name}
+                        </span>
+                        {item.quantity > 1 && (
+                          <span className="text-sm text-gray-500">
+                            ×{item.quantity}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {item.description && (
+                        <p className="text-xs text-gray-500 mt-0.5 truncate">
+                          {item.description}
+                        </p>
+                      )}
+                      
+                      <div className="flex items-center gap-2 mt-1">
+                        {item.category && (
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                            {item.category}
+                          </span>
+                        )}
+                        {item.room_name && (
+                          <span className="text-xs text-gray-500">
+                            📍 {item.room_name}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="text-right shrink-0">
+                      <div className={`font-semibold ${
+                        item.status === 'purchased' ? 'text-gray-500' : 'text-gray-900'
+                      }`}>
+                        {formatCurrency(item.total_price)}
+                      </div>
+                      {item.quantity > 1 && (
+                        <div className="text-xs text-gray-500">
+                          {formatCurrency(item.unit_price)}/u
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -383,20 +444,43 @@ export function ShoppingSessionsList({ project }: ShoppingSessionsListProps) {
                               {getSessionBadge(session)}
                             </div>
                             {session.name && (
-                              <p className="text-sm text-gray-600 ml-8">{session.name}</p>
+                              <p className="text-sm font-medium text-gray-700 ml-8 mb-2">{session.name}</p>
                             )}
-                            <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 ml-8">
-                              <span className="flex items-center gap-1">
-                                <Package className="w-4 h-4" />
-                                {session.total_items} article{session.total_items !== 1 ? 's' : ''}
-                              </span>
-                              <span className="font-medium text-blue-600">
-                                {formatCurrency(session.total_amount)}
-                              </span>
-                              {session.total_items > 0 && (
-                                <span className="text-xs">
-                                  ({session.purchased_items}/{session.total_items} acheté{session.purchased_items !== 1 ? 's' : ''})
+                            
+                            {/* Barre de progression et stats */}
+                            <div className="ml-8 space-y-2">
+                              <div className="flex items-center gap-4 text-sm">
+                                <span className="flex items-center gap-1.5 text-gray-600">
+                                  <Package className="w-4 h-4" />
+                                  <span className="font-medium">{session.total_items}</span> article{session.total_items !== 1 ? 's' : ''}
                                 </span>
+                                <span className="font-semibold text-blue-600 text-base">
+                                  {formatCurrency(session.total_amount)}
+                                </span>
+                              </div>
+                              
+                              {session.total_items > 0 && (
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between text-xs text-gray-600">
+                                    <span>
+                                      {session.purchased_items}/{session.total_items} article{session.purchased_items !== 1 ? 's' : ''} coché{session.purchased_items !== 1 ? 's' : ''}
+                                    </span>
+                                    <span className="font-medium">
+                                      {Math.round((session.purchased_items / session.total_items) * 100)}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div 
+                                      className="bg-green-500 h-full transition-all duration-300 rounded-full"
+                                      style={{ width: `${(session.purchased_items / session.total_items) * 100}%` }}
+                                    />
+                                  </div>
+                                  {session.purchased_amount > 0 && (
+                                    <div className="text-xs text-gray-500">
+                                      {formatCurrency(session.purchased_amount)} dépensé{session.purchased_amount !== session.total_amount && ` sur ${formatCurrency(session.total_amount)}`}
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </div>

@@ -38,7 +38,14 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = updateShoppingSessionSchema.parse(body);
 
-    const session = await updateShoppingSession(id, validatedData);
+    // Convertir null en undefined pour la compatibilité de type
+    const updateData = {
+      date: validatedData.date,
+      name: validatedData.name ?? undefined,
+      notes: validatedData.notes ?? undefined,
+    };
+
+    const session = await updateShoppingSession(id, updateData);
     assertExists(session, 'Session de courses', id);
 
     logInfo('Shopping session updated', { sessionId: id });

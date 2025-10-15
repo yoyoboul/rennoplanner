@@ -8,8 +8,11 @@ import { useStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 import {
   Calendar,
+  Plus,
   Edit2,
   Trash2,
+  ShoppingCart,
+  Package,
   CheckCircle2,
   ChevronDown,
   ChevronUp,

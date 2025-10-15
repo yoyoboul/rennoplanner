@@ -8,7 +8,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { ChevronLeft, ChevronRight, Calendar, ShoppingCart, Package, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import type { ShoppingSession, ProjectWithDetails } from '@/lib/types';
 import { useStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';

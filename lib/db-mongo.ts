@@ -5,19 +5,23 @@ import type {
   RoomMongo,
   TaskMongo,
   PurchaseMongo,
+  ShoppingSessionMongo,
   Project,
   Room,
   Task,
   Purchase,
+  ShoppingSession,
   ProjectWithRooms,
   RoomWithTasks,
   PurchaseWithDetails,
+  ShoppingSessionWithDetails,
 } from './types-mongo';
 import {
   projectToApi,
   roomToApi,
   taskToApi,
   purchaseToApi,
+  shoppingSessionToApi,
 } from './types-mongo';
 
 // ==================== PROJECTS ====================
@@ -289,7 +293,7 @@ export async function getPurchasesByProjectId(projectId: string): Promise<Purcha
     .find({ project_id: new ObjectId(projectId) })
     .toArray();
   
-  // Enrichir les achats avec les noms de pièces et de tâches
+  // Enrichir les achats avec les noms de pièces, tâches et sessions
   const purchasesWithDetails: PurchaseWithDetails[] = await Promise.all(
     purchases.map(async (purchase) => {
       const basePurchase = purchaseToApi(purchase);
@@ -310,6 +314,16 @@ export async function getPurchasesByProjectId(projectId: string): Promise<Purcha
           .findOne({ _id: purchase.task_id });
         if (task) {
           details.task_title = task.title;
+        }
+      }
+      
+      // Récupérer les infos de la session de courses si présent
+      if (purchase.shopping_session_id) {
+        const session = await db.collection('shopping_sessions')
+          .findOne({ _id: purchase.shopping_session_id });
+        if (session) {
+          details.shopping_session_name = session.name;
+          details.shopping_session_date = session.date.toISOString().split('T')[0];
         }
       }
       
@@ -336,6 +350,7 @@ export async function createPurchase(data: Partial<Purchase>): Promise<Purchase>
     project_id: new ObjectId(data.project_id!),
     room_id: data.room_id ? new ObjectId(data.room_id) : undefined,
     task_id: data.task_id ? new ObjectId(data.task_id) : undefined,
+    shopping_session_id: data.shopping_session_id ? new ObjectId(data.shopping_session_id) : undefined,
     name: data.item_name!,
     description: data.description,
     quantity: data.quantity!,
@@ -376,6 +391,7 @@ export async function updatePurchase(
   if (data.purchase_date) updateData.purchase_date = new Date(data.purchase_date);
   if (data.room_id) updateData.room_id = new ObjectId(data.room_id);
   if (data.task_id) updateData.task_id = new ObjectId(data.task_id);
+  if (data.shopping_session_id) updateData.shopping_session_id = new ObjectId(data.shopping_session_id);
   
   const result = await db.collection<PurchaseMongo>('purchases').findOneAndUpdate(
     { _id: new ObjectId(id) },
@@ -460,5 +476,131 @@ export async function deleteChatHistory(projectId: string): Promise<boolean> {
   });
   
   return result.deletedCount > 0;
+}
+
+// ==================== SHOPPING SESSIONS ====================
+
+export async function getShoppingSessionsByProjectId(projectId: string): Promise<ShoppingSession[]> {
+  const db = await getDatabase();
+  const sessions = await db.collection<ShoppingSessionMongo>('shopping_sessions')
+    .find({ project_id: new ObjectId(projectId) })
+    .sort({ date: 1 })
+    .toArray();
+  
+  return sessions.map(shoppingSessionToApi);
+}
+
+export async function getShoppingSessionById(id: string): Promise<ShoppingSessionWithDetails | null> {
+  const db = await getDatabase();
+  const session = await db.collection<ShoppingSessionMongo>('shopping_sessions')
+    .findOne({ _id: new ObjectId(id) });
+  
+  if (!session) return null;
+  
+  // Récupérer les achats de cette session
+  const purchases = await db.collection<PurchaseMongo>('purchases')
+    .find({ shopping_session_id: new ObjectId(id) })
+    .toArray();
+  
+  // Enrichir les achats avec les détails
+  const purchasesWithDetails: PurchaseWithDetails[] = await Promise.all(
+    purchases.map(async (purchase) => {
+      const basePurchase = purchaseToApi(purchase);
+      const details: PurchaseWithDetails = { ...basePurchase };
+      
+      if (purchase.room_id) {
+        const room = await db.collection<RoomMongo>('rooms')
+          .findOne({ _id: purchase.room_id });
+        if (room) details.room_name = room.name;
+      }
+      
+      if (purchase.task_id) {
+        const task = await db.collection<TaskMongo>('tasks')
+          .findOne({ _id: purchase.task_id });
+        if (task) details.task_title = task.title;
+      }
+      
+      return details;
+    })
+  );
+  
+  // Calculer les statistiques
+  const total_items = purchasesWithDetails.length;
+  const total_amount = purchasesWithDetails.reduce((sum, p) => sum + p.total_price, 0);
+  const purchased_items = purchasesWithDetails.filter(p => p.status === 'purchased').length;
+  const purchased_amount = purchasesWithDetails
+    .filter(p => p.status === 'purchased')
+    .reduce((sum, p) => sum + p.total_price, 0);
+  
+  return {
+    ...shoppingSessionToApi(session),
+    purchases: purchasesWithDetails,
+    total_items,
+    total_amount,
+    purchased_items,
+    purchased_amount,
+  };
+}
+
+export async function createShoppingSession(data: {
+  project_id: string;
+  date: string;
+  name?: string;
+  notes?: string;
+}): Promise<ShoppingSession> {
+  const db = await getDatabase();
+  const now = new Date();
+  
+  const sessionDoc: ShoppingSessionMongo = {
+    project_id: new ObjectId(data.project_id),
+    date: new Date(data.date),
+    name: data.name,
+    notes: data.notes,
+    created_at: now,
+    updated_at: now,
+  };
+  
+  const result = await db.collection<ShoppingSessionMongo>('shopping_sessions').insertOne(sessionDoc);
+  sessionDoc._id = result.insertedId;
+  
+  return shoppingSessionToApi(sessionDoc);
+}
+
+export async function updateShoppingSession(
+  id: string,
+  data: { date?: string; name?: string; notes?: string }
+): Promise<ShoppingSession | null> {
+  const db = await getDatabase();
+  
+  const updateData: Record<string, unknown> = {
+    ...data,
+    updated_at: new Date(),
+  };
+  
+  if (data.date) updateData.date = new Date(data.date);
+  
+  const result = await db.collection<ShoppingSessionMongo>('shopping_sessions').findOneAndUpdate(
+    { _id: new ObjectId(id) },
+    { $set: updateData },
+    { returnDocument: 'after' }
+  );
+  
+  return result ? shoppingSessionToApi(result) : null;
+}
+
+export async function deleteShoppingSession(id: string): Promise<boolean> {
+  const db = await getDatabase();
+  
+  // Dissocier tous les achats de cette session (ne pas les supprimer)
+  await db.collection<PurchaseMongo>('purchases').updateMany(
+    { shopping_session_id: new ObjectId(id) },
+    { $unset: { shopping_session_id: '' } }
+  );
+  
+  const result = await db.collection<ShoppingSessionMongo>('shopping_sessions').deleteOne({ 
+    _id: new ObjectId(id) 
+  });
+  
+  return result.deletedCount === 1;
 }
 

@@ -211,6 +211,9 @@ export const createPurchaseSchema = z.object({
   task_id: z.union([z.number().int().positive(), z.string().min(1)])
     .transform((val) => String(val))
     .optional(),
+  shopping_session_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val))
+    .optional(),
   item_name: z.string()
     .min(1, 'Le nom de l\'article est requis')
     .max(200, 'Le nom ne peut pas dépasser 200 caractères'),
@@ -265,12 +268,47 @@ export const updatePurchaseSchema = z.object({
     .max(200, 'Le nom du fournisseur ne peut pas dépasser 200 caractères')
     .optional()
     .nullable(),
+  shopping_session_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val))
+    .optional()
+    .nullable(),
   purchase_date: z.string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide (YYYY-MM-DD)')
     .optional()
     .or(z.literal(''))
     .nullable(),
   status: purchaseStatusSchema.optional(),
+  notes: z.string()
+    .max(1000, 'Les notes ne peuvent pas dépasser 1000 caractères')
+    .optional()
+    .nullable(),
+});
+
+// ============================================
+// SHOPPING SESSIONS
+// ============================================
+
+export const createShoppingSessionSchema = z.object({
+  project_id: z.union([z.number().int().positive(), z.string().min(1)])
+    .transform((val) => String(val)),
+  date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide (YYYY-MM-DD)'),
+  name: z.string()
+    .max(200, 'Le nom ne peut pas dépasser 200 caractères')
+    .optional(),
+  notes: z.string()
+    .max(1000, 'Les notes ne peuvent pas dépasser 1000 caractères')
+    .optional(),
+});
+
+export const updateShoppingSessionSchema = z.object({
+  date: z.string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format de date invalide (YYYY-MM-DD)')
+    .optional(),
+  name: z.string()
+    .max(200, 'Le nom ne peut pas dépasser 200 caractères')
+    .optional()
+    .nullable(),
   notes: z.string()
     .max(1000, 'Les notes ne peuvent pas dépasser 1000 caractères')
     .optional()

@@ -478,6 +478,156 @@ export const availableTools = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_shopping_session',
+      description: 'Crée une session de courses pour un jour spécifique. Permet de planifier les achats par date.',
+      parameters: {
+        type: 'object',
+        properties: {
+          project_id: {
+            type: 'string',
+            description: 'ID du projet',
+          },
+          date: {
+            type: 'string',
+            description: 'Date de la session (format YYYY-MM-DD)',
+          },
+          name: {
+            type: 'string',
+            description: 'Nom optionnel de la session (ex: "Courses Leroy Merlin", "Achat cuisine")',
+          },
+          notes: {
+            type: 'string',
+            description: 'Notes optionnelles (rappels, adresses, horaires)',
+          },
+        },
+        required: ['project_id', 'date'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'add_item_to_shopping_session',
+      description: 'Ajoute un article directement à une session de courses existante',
+      parameters: {
+        type: 'object',
+        properties: {
+          session_id: {
+            type: 'string',
+            description: 'ID de la session de courses',
+          },
+          item_name: {
+            type: 'string',
+            description: 'Nom de l\'article',
+          },
+          description: {
+            type: 'string',
+            description: 'Description de l\'article',
+          },
+          quantity: {
+            type: 'number',
+            description: 'Quantité',
+          },
+          unit_price: {
+            type: 'number',
+            description: 'Prix unitaire en euros',
+          },
+          category: {
+            type: 'string',
+            description: 'Catégorie',
+          },
+          item_type: {
+            type: 'string',
+            enum: ['materiaux', 'meubles'],
+            description: 'Type d\'article',
+          },
+          supplier: {
+            type: 'string',
+            description: 'Nom du fournisseur',
+          },
+          room_id: {
+            type: 'string',
+            description: 'ID de la pièce concernée',
+          },
+        },
+        required: ['session_id', 'item_name'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'update_shopping_session',
+      description: 'Modifie les informations d\'une session de courses',
+      parameters: {
+        type: 'object',
+        properties: {
+          session_id: {
+            type: 'string',
+            description: 'ID de la session à modifier',
+          },
+          date: {
+            type: 'string',
+            description: 'Nouvelle date (format YYYY-MM-DD)',
+          },
+          name: {
+            type: 'string',
+            description: 'Nouveau nom',
+          },
+          notes: {
+            type: 'string',
+            description: 'Nouvelles notes',
+          },
+        },
+        required: ['session_id'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'delete_shopping_session',
+      description: 'Supprime une session de courses. Les articles associés ne sont pas supprimés mais ne sont plus associés à cette session.',
+      parameters: {
+        type: 'object',
+        properties: {
+          session_id: {
+            type: 'string',
+            description: 'ID de la session à supprimer',
+          },
+        },
+        required: ['session_id'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'list_shopping_sessions',
+      description: 'Liste toutes les sessions de courses d\'un projet avec leurs articles et statistiques',
+      parameters: {
+        type: 'object',
+        properties: {
+          project_id: {
+            type: 'string',
+            description: 'ID du projet',
+          },
+          from_date: {
+            type: 'string',
+            description: 'Date de début pour filtrer (optionnel, format YYYY-MM-DD)',
+          },
+          to_date: {
+            type: 'string',
+            description: 'Date de fin pour filtrer (optionnel, format YYYY-MM-DD)',
+          },
+        },
+        required: ['project_id'],
+      },
+    },
+  },
 ];
 
 // Tool execution functions
@@ -520,6 +670,16 @@ export async function executeTool(
       return suggestTaskOrder(args.project_id as string);
     case 'generate_project_report':
       return generateProjectReportFunc(args);
+    case 'create_shopping_session':
+      return createShoppingSessionFunc(args);
+    case 'add_item_to_shopping_session':
+      return addItemToShoppingSessionFunc(args);
+    case 'update_shopping_session':
+      return updateShoppingSessionFunc(args);
+    case 'delete_shopping_session':
+      return deleteShoppingSessionFunc(args);
+    case 'list_shopping_sessions':
+      return listShoppingSessionsFunc(args);
     default:
       throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -702,5 +862,103 @@ async function getShoppingSummaryFunc(args: Record<string, unknown>) {
   });
 
   return { success: true, summary };
+}
+
+// Shopping Sessions functions
+async function createShoppingSessionFunc(args: Record<string, unknown>) {
+  const session = await import('./db-mongo').then(m => m.createShoppingSession({
+    project_id: args.project_id as string,
+    date: args.date as string,
+    name: args.name as string | undefined,
+    notes: args.notes as string | undefined,
+  }));
+  
+  return { 
+    success: true, 
+    session,
+    message: `Session de courses créée pour le ${args.date}${args.name ? ` - ${args.name}` : ''}`,
+  };
+}
+
+async function addItemToShoppingSessionFunc(args: Record<string, unknown>) {
+  const { session_id, ...purchaseData } = args;
+  
+  // Récupérer la session pour obtenir le project_id
+  const session = await import('./db-mongo').then(m => m.getShoppingSessionById(session_id as string));
+  
+  if (!session) {
+    throw new Error('Session de courses introuvable');
+  }
+  
+  const purchase = await createPurchase({
+    project_id: session.project_id,
+    shopping_session_id: session_id as string,
+    item_name: args.item_name as string,
+    description: args.description as string | undefined,
+    quantity: args.quantity as number ?? 1,
+    unit_price: args.unit_price as number ?? 0,
+    category: args.category as string | undefined,
+    item_type: (args.item_type as 'materiaux' | 'meubles') ?? 'materiaux',
+    supplier: args.supplier as string | undefined,
+    room_id: args.room_id as string | undefined,
+    status: 'planned',
+  });
+  
+  return { 
+    success: true, 
+    purchase,
+    message: `Article "${args.item_name}" ajouté à la session`,
+  };
+}
+
+async function updateShoppingSessionFunc(args: Record<string, unknown>) {
+  const { session_id, ...updates } = args;
+  
+  const session = await import('./db-mongo').then(m => m.updateShoppingSession(
+    session_id as string,
+    updates as { date?: string; name?: string; notes?: string }
+  ));
+  
+  return { 
+    success: true, 
+    session,
+    message: 'Session mise à jour avec succès',
+  };
+}
+
+async function deleteShoppingSessionFunc(args: Record<string, unknown>) {
+  await import('./db-mongo').then(m => m.deleteShoppingSession(args.session_id as string));
+  
+  return { 
+    success: true, 
+    message: 'Session supprimée. Les articles ne sont plus associés à cette session.',
+  };
+}
+
+async function listShoppingSessionsFunc(args: Record<string, unknown>) {
+  const sessions = await import('./db-mongo').then(m => m.getShoppingSessionsByProjectId(args.project_id as string));
+  
+  // Optionnel: filtrer par plage de dates
+  let filteredSessions = sessions;
+  if (args.from_date || args.to_date) {
+    filteredSessions = sessions.filter(session => {
+      const sessionDate = new Date(session.date);
+      if (args.from_date && sessionDate < new Date(args.from_date as string)) return false;
+      if (args.to_date && sessionDate > new Date(args.to_date as string)) return false;
+      return true;
+    });
+  }
+  
+  // Enrichir avec les détails de chaque session
+  const sessionsWithDetails = await Promise.all(
+    filteredSessions.map(session => 
+      import('./db-mongo').then(m => m.getShoppingSessionById(session.id as string))
+    )
+  );
+  
+  return { 
+    success: true, 
+    sessions: sessionsWithDetails.filter(s => s !== null),
+  };
 }
 

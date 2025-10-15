@@ -26,7 +26,15 @@ interface ShoppingListProps {
 }
 
 export function ShoppingList({ project }: ShoppingListProps) {
-  const { purchases, fetchPurchases, createPurchase, updatePurchase, deletePurchase } = useStore();
+  const { 
+    purchases, 
+    shoppingSessions,
+    fetchPurchases, 
+    fetchShoppingSessions,
+    createPurchase, 
+    updatePurchase, 
+    deletePurchase 
+  } = useStore();
   const { confirm, dialog } = useConfirmDialog();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | number | null>(null);
@@ -46,12 +54,14 @@ export function ShoppingList({ project }: ShoppingListProps) {
     supplier: '',
     room_id: '',
     task_id: '',
+    shopping_session_id: '',
     notes: '',
   });
 
   useEffect(() => {
     fetchPurchases(project.id);
-  }, [project.id, fetchPurchases]);
+    fetchShoppingSessions(project.id);
+  }, [project.id, fetchPurchases, fetchShoppingSessions]);
 
   const resetForm = () => {
     setFormData({
@@ -64,6 +74,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
       supplier: '',
       room_id: '',
       task_id: '',
+      shopping_session_id: '',
       notes: '',
     });
     setShowAddForm(false);
@@ -83,6 +94,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
       supplier: formData.supplier || undefined,
       room_id: formData.room_id || undefined,
       task_id: formData.task_id || undefined,
+      shopping_session_id: formData.shopping_session_id || undefined,
       notes: formData.notes || undefined,
       status: 'planned' as PurchaseStatus,
     };
@@ -106,6 +118,7 @@ export function ShoppingList({ project }: ShoppingListProps) {
       supplier: purchase.supplier || '',
       room_id: purchase.room_id?.toString() || '',
       task_id: purchase.task_id?.toString() || '',
+      shopping_session_id: purchase.shopping_session_id?.toString() || '',
       notes: purchase.notes || '',
     });
     setEditingId(purchase.id);
@@ -204,6 +217,13 @@ export function ShoppingList({ project }: ShoppingListProps) {
               {purchase.task_title && (
                 <div>
                   <span className="font-medium">Tâche:</span> {purchase.task_title}
+                </div>
+              )}
+              {purchase.shopping_session_date && (
+                <div className="col-span-2">
+                  <span className="font-medium text-blue-600">📅 Session:</span>{' '}
+                  {formatDate(purchase.shopping_session_date)}
+                  {purchase.shopping_session_name && ` - ${purchase.shopping_session_name}`}
                 </div>
               )}
               {purchase.purchase_date && (
@@ -414,6 +434,23 @@ export function ShoppingList({ project }: ShoppingListProps) {
                         {room.name}
                       </option>
                     ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Session de courses (optionnel)</label>
+                  <select
+                    className="w-full h-10 rounded-md border border-gray-300 px-3 py-2"
+                    value={formData.shopping_session_id}
+                    onChange={(e) => setFormData({ ...formData, shopping_session_id: e.target.value })}
+                  >
+                    <option value="">Aucune session</option>
+                    {shoppingSessions
+                      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                      .map((session) => (
+                        <option key={session.id} value={session.id}>
+                          {formatDate(session.date)} {session.name ? `- ${session.name}` : ''}
+                        </option>
+                      ))}
                   </select>
                 </div>
               </div>

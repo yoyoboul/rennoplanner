@@ -78,6 +78,7 @@ export interface Purchase {
   project_id: string | number;
   room_id?: string | number;
   task_id?: string | number;
+  shopping_session_id?: string | number;
   item_name: string;
   description?: string;
   quantity: number;
@@ -88,6 +89,16 @@ export interface Purchase {
   supplier?: string;
   purchase_date?: string;
   status: PurchaseStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShoppingSession {
+  id: string | number;
+  project_id: string | number;
+  date: string;
+  name?: string;
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -111,4 +122,14 @@ export interface ProjectWithDetails extends Project {
 export interface PurchaseWithDetails extends Purchase {
   room_name?: string;
   task_title?: string;
+  shopping_session_name?: string;
+  shopping_session_date?: string;
+}
+
+export interface ShoppingSessionWithDetails extends ShoppingSession {
+  purchases: PurchaseWithDetails[];
+  total_items: number;
+  total_amount: number;
+  purchased_items: number;
+  purchased_amount: number;
 }

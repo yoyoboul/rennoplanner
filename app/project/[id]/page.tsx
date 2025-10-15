@@ -16,6 +16,8 @@ import { AIChat } from '@/components/ai-chat';
 import { TimelineView } from '@/components/timeline-view';
 import { BudgetManager } from '@/components/budget-manager';
 import { ShoppingList } from '@/components/shopping-list';
+import { ShoppingSessionsList } from '@/components/shopping-sessions-list';
+import { ShoppingSessionsCalendar } from '@/components/shopping-sessions-calendar';
 import { KPICards } from '@/components/kpi-cards';
 import { TasksView } from '@/components/tasks-view';
 import { CalendarView } from '@/components/calendar-view';
@@ -53,6 +55,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
   const { isOpen: searchOpen, setIsOpen: setSearchOpen } = useGlobalSearch();
   const isMobile = useIsMobile();
   const [view, setView] = useState<'overview' | 'tasks' | 'kanban' | 'timeline' | 'calendar' | 'chat' | 'shopping'>('overview');
+  const [shoppingView, setShoppingView] = useState<'list' | 'sessions-list' | 'sessions-calendar'>('list');
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [showBudgetManager, setShowBudgetManager] = useState(false);
@@ -603,7 +606,37 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
           {/* Shopping List */}
           <TabsContent value="shopping" className="mt-6">
-            <ShoppingList project={currentProject} />
+            <div className="space-y-6">
+              {/* Sub-tabs pour Shopping */}
+              <Tabs value={shoppingView} onValueChange={(value) => setShoppingView(value as typeof shoppingView)}>
+                <TabsList>
+                  <TabsTrigger value="list" className="gap-2">
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Liste d&apos;achats</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="sessions-list" className="gap-2">
+                    <ListChecks className="w-4 h-4" />
+                    <span>Sessions - Liste</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="sessions-calendar" className="gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>Sessions - Calendrier</span>
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="list" className="mt-6">
+                  <ShoppingList project={currentProject} />
+                </TabsContent>
+                
+                <TabsContent value="sessions-list" className="mt-6">
+                  <ShoppingSessionsList project={currentProject} />
+                </TabsContent>
+                
+                <TabsContent value="sessions-calendar" className="mt-6">
+                  <ShoppingSessionsCalendar project={currentProject} />
+                </TabsContent>
+              </Tabs>
+            </div>
           </TabsContent>
 
           {/* AI Chat */}

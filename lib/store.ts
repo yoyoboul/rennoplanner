@@ -1,11 +1,21 @@
 import { create } from 'zustand';
-import type { Project, Room, Task, ProjectWithDetails, Purchase, PurchaseWithDetails } from './types';
+import type { 
+  Project, 
+  Room, 
+  Task, 
+  ProjectWithDetails, 
+  Purchase, 
+  PurchaseWithDetails,
+  ShoppingSession,
+  ShoppingSessionWithDetails
+} from './types';
 import { handleAPICall } from './client-error-handler';
 
 interface AppState {
   currentProject: ProjectWithDetails | null;
   projects: Project[];
   purchases: PurchaseWithDetails[];
+  shoppingSessions: ShoppingSession[];
   isLoading: boolean;
   error: string | null;
 
@@ -13,6 +23,7 @@ interface AppState {
   setCurrentProject: (project: ProjectWithDetails | null) => void;
   setProjects: (projects: Project[]) => void;
   setPurchases: (purchases: PurchaseWithDetails[]) => void;
+  setShoppingSessions: (sessions: ShoppingSession[]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 
@@ -35,18 +46,26 @@ interface AppState {
   createPurchase: (data: Partial<Purchase>) => Promise<void>;
   updatePurchase: (id: string | number, data: Partial<Purchase>) => Promise<void>;
   deletePurchase: (id: string | number) => Promise<void>;
+
+  fetchShoppingSessions: (projectId: string | number) => Promise<void>;
+  fetchShoppingSessionById: (id: string | number) => Promise<ShoppingSessionWithDetails | null>;
+  createShoppingSession: (data: Partial<ShoppingSession>) => Promise<void>;
+  updateShoppingSession: (id: string | number, data: Partial<ShoppingSession>) => Promise<void>;
+  deleteShoppingSession: (id: string | number) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
   currentProject: null,
   projects: [],
   purchases: [],
+  shoppingSessions: [],
   isLoading: false,
   error: null,
 
   setCurrentProject: (project) => set({ currentProject: project }),
   setProjects: (projects) => set({ projects }),
   setPurchases: (purchases) => set({ purchases }),
+  setShoppingSessions: (sessions) => set({ shoppingSessions: sessions }),
   setLoading: (loading) => set({ isLoading: loading }),
   setError: (error) => set({ error }),
 
@@ -322,6 +341,111 @@ export const useStore = create<AppState>((set, get) => ({
         purchases: get().purchases.filter((p) => p.id !== id),
         isLoading: false,
       });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  fetchShoppingSessions: async (projectId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const sessions = await handleAPICall<ShoppingSession[]>(
+        () => fetch(`/api/shopping-sessions?project_id=${projectId}`),
+        { errorMessage: 'Impossible de charger les sessions de courses' }
+      );
+      set({ shoppingSessions: sessions, isLoading: false });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  fetchShoppingSessionById: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      const session = await handleAPICall<ShoppingSessionWithDetails>(
+        () => fetch(`/api/shopping-sessions/${id}`),
+        { errorMessage: 'Impossible de charger la session' }
+      );
+      set({ isLoading: false });
+      return session;
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
+      return null;
+    }
+  },
+
+  createShoppingSession: async (data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const session = await handleAPICall<ShoppingSession>(
+        () => fetch('/api/shopping-sessions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
+        {
+          successMessage: 'Session de courses créée !',
+          showSuccess: true,
+        }
+      );
+      set({
+        shoppingSessions: [...get().shoppingSessions, session],
+        isLoading: false,
+      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  updateShoppingSession: async (id, data) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedSession = await handleAPICall<ShoppingSession>(
+        () => fetch(`/api/shopping-sessions/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }),
+        {
+          successMessage: 'Session mise à jour !',
+          showSuccess: true,
+        }
+      );
+      set({
+        shoppingSessions: get().shoppingSessions.map((s) => 
+          s.id === id ? updatedSession : s
+        ),
+        isLoading: false,
+      });
+    } catch (error: unknown) {
+      const err = error as Error;
+      set({ error: err.message, isLoading: false });
+    }
+  },
+
+  deleteShoppingSession: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await handleAPICall(
+        () => fetch(`/api/shopping-sessions/${id}`, { method: 'DELETE' }),
+        {
+          successMessage: 'Session supprimée !',
+          showSuccess: true,
+        }
+      );
+      set({
+        shoppingSessions: get().shoppingSessions.filter((s) => s.id !== id),
+        isLoading: false,
+      });
+      // Rafraîchir les achats pour mettre à jour leurs associations
+      const currentProject = get().currentProject;
+      if (currentProject) {
+        await get().fetchPurchases(currentProject.id);
+      }
     } catch (error: unknown) {
       const err = error as Error;
       set({ error: err.message, isLoading: false });

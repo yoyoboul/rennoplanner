@@ -73,6 +73,7 @@ export interface PurchaseMongo {
   project_id: ObjectId;
   room_id?: ObjectId;
   task_id?: ObjectId;
+  shopping_session_id?: ObjectId;
   name: string;
   description?: string;
   quantity: number;
@@ -83,6 +84,16 @@ export interface PurchaseMongo {
   supplier?: string;
   status: PurchaseStatus;
   purchase_date?: Date;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ShoppingSessionMongo {
+  _id?: ObjectId;
+  project_id: ObjectId;
+  date: Date;
+  name?: string;
+  notes?: string;
   created_at: Date;
   updated_at: Date;
 }
@@ -133,6 +144,7 @@ export interface Purchase {
   project_id: string;
   room_id?: string;
   task_id?: string;
+  shopping_session_id?: string;
   item_name: string;
   description?: string;
   quantity: number;
@@ -143,6 +155,16 @@ export interface Purchase {
   supplier?: string;
   status: PurchaseStatus;
   purchase_date?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShoppingSession {
+  id: string;
+  project_id: string;
+  date: string;
+  name?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -163,6 +185,16 @@ export interface ProjectWithRooms extends Project {
 export interface PurchaseWithDetails extends Purchase {
   room_name?: string;
   task_title?: string;
+  shopping_session_name?: string;
+  shopping_session_date?: string;
+}
+
+export interface ShoppingSessionWithDetails extends ShoppingSession {
+  purchases: PurchaseWithDetails[];
+  total_items: number;
+  total_amount: number;
+  purchased_items: number;
+  purchased_amount: number;
 }
 
 // Fonctions de conversion MongoDB → API
@@ -217,6 +249,7 @@ export function purchaseToApi(doc: PurchaseMongo): Purchase {
     project_id: doc.project_id.toString(),
     room_id: doc.room_id?.toString(),
     task_id: doc.task_id?.toString(),
+    shopping_session_id: doc.shopping_session_id?.toString(),
     item_name: doc.name,
     description: doc.description,
     quantity: doc.quantity,
@@ -227,6 +260,18 @@ export function purchaseToApi(doc: PurchaseMongo): Purchase {
     supplier: doc.supplier,
     status: doc.status,
     purchase_date: doc.purchase_date?.toISOString(),
+    created_at: doc.created_at.toISOString(),
+    updated_at: doc.updated_at.toISOString(),
+  };
+}
+
+export function shoppingSessionToApi(doc: ShoppingSessionMongo): ShoppingSession {
+  return {
+    id: doc._id!.toString(),
+    project_id: doc.project_id.toString(),
+    date: doc.date.toISOString().split('T')[0], // Format YYYY-MM-DD
+    name: doc.name,
+    notes: doc.notes,
     created_at: doc.created_at.toISOString(),
     updated_at: doc.updated_at.toISOString(),
   };
